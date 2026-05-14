@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ER Lab | Expressões Regulares</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Consolas', 'monospace']
+          },
+          colors: {
+            ink: '#0f172a',
+            brand: '#2563eb',
+            soft: '#eff6ff'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,.82); }
+    .tab-active { background: #2563eb; color: white; box-shadow: 0 12px 30px rgba(37, 99, 235, .25); }
+    .code-token { font-family: 'JetBrains Mono', Consolas, monospace; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
+    <div class="absolute inset-0 opacity-20" aria-hidden="true">
+      <div class="absolute left-10 top-10 h-48 w-48 rounded-full bg-blue-400 blur-3xl"></div>
+      <div class="absolute right-10 bottom-0 h-60 w-60 rounded-full bg-cyan-300 blur-3xl"></div>
+    </div>
+
+    <div class="relative mx-auto max-w-7xl px-6 py-12 lg:py-16">
+      <div class="max-w-3xl">
+        <span class="inline-flex items-center rounded-full border border-blue-300/40 bg-white/10 px-4 py-1 text-sm font-medium text-blue-100">
+          Linguagens Formais • Expressões Regulares
+        </span>
+        <h1 class="mt-5 text-4xl font-extrabold tracking-tight md:text-6xl">
+          ER Lab: simulador educativo de Expressões Regulares
+        </h1>
+        <p class="mt-5 text-lg leading-8 text-slate-200">
+          Web app para estudar expressões regulares, conjuntos regulares, operadores, precedência e identidades de Kleene com exemplos inspirados no material da disciplina.
+        </p>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a href="#simulador" class="rounded-2xl bg-blue-500 px-5 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-400">Abrir simulador</a>
+          <a href="#glossario" class="rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/20">Ver glossário</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-6 py-10">
+    <section class="mb-8 grid gap-4 md:grid-cols-3">
+      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Conceito</p>
+        <h2 class="mt-2 text-xl font-bold">ER como gerador</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600">A expressão regular descreve ou gera uma linguagem; o teste verifica se uma cadeia pertence ao padrão informado.</p>
+      </article>
+      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Precedência</p>
+        <h2 class="mt-2 text-xl font-bold">*, concatenação, união</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600">O fechamento tem maior prioridade, depois a concatenação, e por último a união.</p>
+      </article>
+      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">JavaScript</p>
+        <h2 class="mt-2 text-xl font-bold">Sintaxe prática</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600">O simulador usa RegExp do JavaScript. O símbolo acadêmico <span class="code-token">+</span> para união é detectado e explicado.</p>
+      </article>
+    </section>
+
+    <nav class="sticky top-0 z-20 mb-8 rounded-3xl border border-slate-200 glass p-2 shadow-sm">
+      <div class="grid gap-2 sm:grid-cols-4">
+        <button class="tab-btn tab-active rounded-2xl px-4 py-3 text-sm font-bold transition" data-tab="simulador">Simulador</button>
+        <button class="tab-btn rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100" data-tab="glossario">Glossário</button>
+        <button class="tab-btn rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100" data-tab="exemplos">Exemplos do PDF</button>
+        <button class="tab-btn rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100" data-tab="identidades">Identidades</button>
+      </div>
+    </nav>
+
+    <section id="simulador" class="tab-panel grid gap-8 lg:grid-cols-[1.1fr_.9fr]">
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Simulador de ER</p>
+            <h2 class="mt-2 text-2xl font-extrabold text-slate-900">Teste uma expressão regular</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600">Digite uma ER em sintaxe JavaScript e uma cadeia para verificar se ocorre match.</p>
+          </div>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">
+            <input id="anchorMode" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
+            Match exato
+          </label>
+        </div>
+
+        <div class="mt-6 grid gap-5">
+          <label class="block">
+            <span class="mb-2 block text-sm font-bold text-slate-700">Expressão regular</span>
+            <input id="regexInput" class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-mono text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" value="[0-9][0-9]*" placeholder="Ex.: (c|d)*cc(c|d)*" />
+          </label>
+
+          <label class="block">
+            <span class="mb-2 block text-sm font-bold text-slate-700">String de teste</span>
+            <input id="testInput" class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-mono text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" value="27" placeholder="Ex.: ccd" />
+          </label>
+
+          <div class="grid gap-3 sm:grid-cols-3">
+            <button id="runBtn" class="rounded-2xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">Testar match</button>
+            <button id="clearBtn" class="rounded-2xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 transition hover:bg-slate-50">Limpar</button>
+            <button id="explainBtn" class="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 font-bold text-blue-700 transition hover:bg-blue-100">Explicar</button>
+          </div>
+        </div>
+
+        <div id="resultBox" class="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+          <p class="text-sm font-semibold text-slate-500">Resultado</p>
+          <p id="resultText" class="mt-2 text-xl font-extrabold text-slate-800">Aguardando teste...</p>
+          <p id="resultDetail" class="mt-2 text-sm leading-6 text-slate-600">Use os exemplos ou digite sua própria expressão regular.</p>
+        </div>
+
+        <div id="noteBox" class="mt-4 hidden rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900"></div>
+      </div>
+
+      <aside class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Tradução didática</p>
+        <h3 class="mt-2 text-2xl font-extrabold text-slate-900">Do PDF para JavaScript</h3>
+        <div class="mt-5 space-y-4 text-sm leading-6 text-slate-600">
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <p class="font-bold text-slate-800">União</p>
+            <p>No material, pode aparecer como <span class="code-token">x|y</span> ou <span class="code-token">x+y</span>. No JavaScript, use <span class="code-token">x|y</span>. O <span class="code-token">+</span> do JavaScript significa “uma ou mais ocorrências”.</p>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <p class="font-bold text-slate-800">Concatenação</p>
+            <p>No PDF, <span class="code-token">xy</span> ou <span class="code-token">x·y</span>. No JavaScript, escreva os símbolos juntos: <span class="code-token">ab</span>.</p>
+          </div>
+          <div class="rounded-2xl bg-slate-50 p-4">
+            <p class="font-bold text-slate-800">Fechamento</p>
+            <p><span class="code-token">x*</span> significa zero ou mais repetições de <span class="code-token">x</span>.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="glossario" class="tab-panel hidden">
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Glossário interativo</p>
+        <h2 class="mt-2 text-3xl font-extrabold text-slate-900">Hierarquia de precedência dos operadores</h2>
+        <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600">A precedência define a ordem de leitura quando não há parênteses. Parênteses podem alterar a precedência localmente.</p>
+        <div id="glossaryCards" class="mt-7 grid gap-5 lg:grid-cols-3"></div>
+      </div>
+    </section>
+
+    <section id="exemplos" class="tab-panel hidden">
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Exemplos práticos</p>
+        <h2 class="mt-2 text-3xl font-extrabold text-slate-900">Carregar exemplos do material</h2>
+        <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600">Clique em um exemplo para preencher o simulador automaticamente.</p>
+        <div id="exampleButtons" class="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+      </div>
+    </section>
+
+    <section id="identidades" class="tab-panel hidden">
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Consulta rápida</p>
+        <h2 class="mt-2 text-3xl font-extrabold text-slate-900">Relações de identidade de Kleene</h2>
+        <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600">As identidades abaixo servem para simplificar, transformar e reconhecer equivalências entre expressões regulares.</p>
+        <div class="mt-6 overflow-hidden rounded-3xl border border-slate-200">
+          <table class="w-full border-collapse text-left text-sm">
+            <thead class="bg-slate-100 text-slate-700">
+              <tr>
+                <th class="px-4 py-3 font-extrabold">Identidade</th>
+                <th class="px-4 py-3 font-extrabold">Ideia principal</th>
+              </tr>
+            </thead>
+            <tbody id="identityRows" class="divide-y divide-slate-200 bg-white"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="mx-auto max-w-7xl px-6 pb-10">
+    <div class="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-6 text-slate-600 shadow-sm">
+      <p class="font-bold text-slate-900">Observação acadêmica</p>
+      <p class="mt-2">Este simulador usa a engine de expressões regulares do JavaScript para fins didáticos. A notação do material de Linguagens Formais é conceitual; por isso, alguns símbolos precisam ser adaptados para teste computacional.</p>
+    </div>
+  </footer>
+
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => document.querySelectorAll(selector);
+
+    const regexInput = $('#regexInput');
+    const testInput = $('#testInput');
+    const anchorMode = $('#anchorMode');
+    const resultBox = $('#resultBox');
+    const resultText = $('#resultText');
+    const resultDetail = $('#resultDetail');
+    const noteBox = $('#noteBox');
+
+    const glossary = [
+      {
+        title: '1. Fechamento de Kleene',
+        symbol: 'x*',
+        precedence: 'Mais alta',
+        description: 'Representa zero ou mais repetições da expressão x. Exemplo: c* aceita ε, c, cc, ccc...',
+        js: 'Mesmo símbolo no JavaScript: x*.'
+      },
+      {
+        title: '2. Concatenação',
+        symbol: 'xy ou x·y',
+        precedence: 'Intermediária',
+        description: 'Representa a junção de duas linguagens ou símbolos. Exemplo: ab representa a seguido de b.',
+        js: 'No JavaScript, escreva junto: ab.'
+      },
+      {
+        title: '3. União',
+        symbol: 'x|y ou x+y',
+        precedence: 'Mais baixa',
+        description: 'Representa escolha entre x ou y, equivalente à união de conjuntos regulares.',
+        js: 'No JavaScript, use x|y. Cuidado: + significa uma ou mais ocorrências.'
+      }
+    ];
+
+    const examples = [
+      {
+        title: 'Números naturais decimais',
+        formal: 'N = DD*',
+        jsRegex: '[0-9][0-9]*',
+        test: '27',
+        explanation: 'D representa qualquer algarismo de 0 a 9. DD* exige pelo menos um dígito.'
+      },
+      {
+        title: 'Números reais decimais sem sinal',
+        formal: 'R = DD*.D* ∪ D*.DD*',
+        jsRegex: '([0-9][0-9]*\\.[0-9]*|[0-9]*\\.[0-9][0-9]*)',
+        test: '915.4',
+        explanation: 'Aceita casos como 915.4, .315 e 47., respeitando a ideia do material.'
+      },
+      {
+        title: "Cadeias que contenham 'cc'",
+        formal: 'r = (c + d)*(cc)(c + d)*',
+        jsRegex: '(c|d)*cc(c|d)*',
+        test: 'dccd',
+        explanation: 'Sobre Σ = {c,d}, aceita qualquer cadeia que tenha cc como subpalavra.'
+      },
+      {
+        title: 'Começa com a e termina com b ou c',
+        formal: 'a(a|b|c|d)*(b|c)',
+        jsRegex: 'a(a|b|c|d)*(b|c)',
+        test: 'adbc',
+        explanation: 'Exemplo com Σ = {a,b,c,d}.'
+      },
+      {
+        title: 'Linguagem 1*01*',
+        formal: '1*01*',
+        jsRegex: '1*01*',
+        test: '111011',
+        explanation: 'Começa com qualquer quantidade de 1, tem um 0 obrigatório, e termina com qualquer quantidade de 1.'
+      },
+      {
+        title: 'Apenas a, b, c com pelo menos um símbolo',
+        formal: '(a|b|c)+',
+        jsRegex: '(a|b|c)+',
+        test: 'abcab',
+        explanation: 'No PDF, x+ é citado como fechamento transitivo: uma ou mais ocorrências.'
+      }
+    ];
+
+    const identities = [
+      ['x | y = y | x', 'Comutatividade da união.'],
+      ['∅* = ε', 'O fechamento do conjunto vazio gera a cadeia vazia.'],
+      ['x | (y | z) = (x | y) | z', 'Associatividade da união.'],
+      ['x(yz) = (xy)z', 'Associatividade da concatenação.'],
+      ['x(y | z) = xy | xz', 'Distributividade à esquerda.'],
+      ['(x | y)z = xz | yz', 'Distributividade à direita.'],
+      ['xε = εx = x', 'A cadeia vazia é elemento neutro da concatenação.'],
+      ['x∅ = ∅x = ∅', 'Concatenar com vazio gera vazio.'],
+      ['ε∅ = ∅ε = ∅', 'Caso particular da concatenação com vazio.'],
+      ['x* = x | x*', 'Identidade apresentada para fechamento.'],
+      ['(x*)* = x*', 'Aplicar fechamento novamente não altera o resultado.'],
+      ['x | x = x', 'Idempotência da união.'],
+      ['x | ∅ = x', 'Vazio é neutro da união.'],
+      ['(xy)*x = x(yx)*', 'Equivalência algébrica útil em transformações.']
+    ];
+
+    function setTab(tabName) {
+      $$('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+      $('#' + tabName).classList.remove('hidden');
+      $$('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('text-slate-700', 'hover:bg-slate-100');
+      });
+      const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+      activeBtn.classList.add('tab-active');
+      activeBtn.classList.remove('text-slate-700', 'hover:bg-slate-100');
+    }
+
+    function renderGlossary() {
+      $('#glossaryCards').innerHTML = glossary.map(item => `
+        <article class="rounded-3xl border border-slate-200 bg-slate-50 p-6 transition hover:-translate-y-1 hover:shadow-lg">
+          <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">${item.precedence}</span>
+          <h3 class="mt-4 text-xl font-extrabold text-slate-900">${item.title}</h3>
+          <p class="mt-3 code-token text-2xl font-black text-blue-700">${item.symbol}</p>
+          <p class="mt-3 text-sm leading-6 text-slate-600">${item.description}</p>
+          <p class="mt-4 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-700"><strong>Na prática:</strong> ${item.js}</p>
+        </article>
+      `).join('');
+    }
+
+    function renderExamples() {
+      $('#exampleButtons').innerHTML = examples.map((ex, index) => `
+        <button class="example-btn rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50 hover:shadow-lg" data-index="${index}">
+          <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-blue-700">Exemplo ${index + 1}</span>
+          <h3 class="mt-4 text-lg font-extrabold text-slate-900">${ex.title}</h3>
+          <p class="mt-2 code-token text-sm font-bold text-slate-700">${ex.formal}</p>
+          <p class="mt-3 text-sm leading-6 text-slate-600">${ex.explanation}</p>
+        </button>
+      `).join('');
+    }
+
+    function renderIdentities() {
+      $('#identityRows').innerHTML = identities.map(([identity, idea]) => `
+        <tr class="transition hover:bg-blue-50">
+          <td class="px-4 py-4 code-token text-base font-bold text-slate-900">${identity}</td>
+          <td class="px-4 py-4 text-slate-600">${idea}</td>
+        </tr>
+      `).join('');
+    }
+
+    function detectAcademicNotation(pattern) {
+      const notes = [];
+      if (pattern.includes('∪')) {
+        notes.push('Você usou ∪, símbolo acadêmico de união. No JavaScript, troque por |.');
+      }
+      if (pattern.includes('ε') || pattern.includes('ϵ')) {
+        notes.push('Você usou ε, cadeia vazia. Em JavaScript, represente cadeia vazia com uma alternativa vazia, dependendo do contexto.');
+      }
+      if (pattern.includes('∅')) {
+        notes.push('Você usou ∅, conjunto vazio. JavaScript RegExp não tem símbolo direto para conjunto vazio; uma aproximação prática é (?!) para nunca casar.');
+      }
+      if (pattern.includes('·')) {
+        notes.push('Você usou · para concatenação. No JavaScript, remova o ponto e escreva os símbolos juntos.');
+      }
+      if (/[A-Za-z0-9)]\+[A-Za-z0-9(]/.test(pattern) || pattern.includes(' + ')) {
+        notes.push('Atenção: no PDF, + pode representar união, como x+y. No JavaScript, + significa “uma ou mais ocorrências”. Para união, use |.');
+      }
+      return notes;
+    }
+
+    function normalizePattern(pattern) {
+      return anchorMode.checked ? `^(?:${pattern})$` : pattern;
+    }
+
+    function runTest() {
+      const pattern = regexInput.value.trim();
+      const text = testInput.value;
+      const notes = detectAcademicNotation(pattern);
+
+      if (!pattern) {
+        showResult('Informe uma expressão regular.', 'Digite um padrão para executar o teste.', 'neutral');
+        return;
+      }
+
+      try {
+        const regex = new RegExp(normalizePattern(pattern));
+        const matched = regex.test(text);
+        showResult(
+          matched ? 'MATCH: a cadeia foi aceita.' : 'NÃO DEU MATCH: a cadeia foi rejeitada.',
+          `Expressão usada: /${normalizePattern(pattern)}/ • String testada: "${text}"`,
+          matched ? 'success' : 'error'
+        );
+      } catch (error) {
+        showResult('Erro de sintaxe na expressão regular.', error.message, 'error');
+      }
+
+      renderNotes(notes);
+    }
+
+    function showResult(title, detail, type) {
+      resultText.textContent = title;
+      resultDetail.textContent = detail;
+      resultBox.className = 'mt-6 rounded-3xl border p-5 ' + (
+        type === 'success' ? 'border-emerald-200 bg-emerald-50' :
+        type === 'error' ? 'border-red-200 bg-red-50' :
+        'border-slate-200 bg-slate-50'
+      );
+      resultText.className = 'mt-2 text-xl font-extrabold ' + (
+        type === 'success' ? 'text-emerald-800' :
+        type === 'error' ? 'text-red-800' :
+        'text-slate-800'
+      );
+    }
+
+    function renderNotes(notes) {
+      if (!notes.length) {
+        noteBox.classList.add('hidden');
+        noteBox.innerHTML = '';
+        return;
+      }
+      noteBox.classList.remove('hidden');
+      noteBox.innerHTML = `<strong>Nota visual sobre a notação do PDF:</strong><ul class="mt-2 list-disc pl-5">${notes.map(note => `<li>${note}</li>`).join('')}</ul>`;
+    }
+
+    function explainCurrentRegex() {
+      const pattern = regexInput.value.trim();
+      const notes = detectAcademicNotation(pattern);
+      const explanation = [];
+      if (pattern.includes('*')) explanation.push('Contém fechamento de Kleene (*): zero ou mais ocorrências.');
+      if (pattern.includes('|')) explanation.push('Contém união/alternância (|): escolha entre padrões.');
+      if (pattern.includes('+')) explanation.push('Contém +: no JavaScript significa uma ou mais ocorrências; no PDF também pode aparecer como união em x+y.');
+      if (/[A-Za-z0-9)][A-Za-z0-9(]/.test(pattern)) explanation.push('Contém concatenação implícita: símbolos próximos devem aparecer em sequência.');
+      if (pattern.includes('(') || pattern.includes(')')) explanation.push('Contém parênteses: usados para agrupar e alterar a precedência.');
+
+      showResult('Explicação da expressão', explanation.length ? explanation.join(' ') : 'Não encontrei operadores principais na expressão atual.', 'neutral');
+      renderNotes(notes);
+    }
+
+    $$('.tab-btn').forEach(btn => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
+    $('#runBtn').addEventListener('click', runTest);
+    $('#clearBtn').addEventListener('click', () => {
+      regexInput.value = '';
+      testInput.value = '';
+      showResult('Aguardando teste...', 'Use os exemplos ou digite sua própria expressão regular.', 'neutral');
+      renderNotes([]);
+    });
+    $('#explainBtn').addEventListener('click', explainCurrentRegex);
+    regexInput.addEventListener('input', () => renderNotes(detectAcademicNotation(regexInput.value)));
+    testInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') runTest();
+    });
+
+    renderGlossary();
+    renderExamples();
+    renderIdentities();
+    runTest();
+
+    document.addEventListener('click', event => {
+      const button = event.target.closest('.example-btn');
+      if (!button) return;
+      const ex = examples[Number(button.dataset.index)];
+      regexInput.value = ex.jsRegex;
+      testInput.value = ex.test;
+      setTab('simulador');
+      showResult(`Exemplo carregado: ${ex.title}`, `${ex.formal} → sintaxe JS: /${ex.jsRegex}/`, 'neutral');
+      renderNotes(detectAcademicNotation(ex.formal));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>

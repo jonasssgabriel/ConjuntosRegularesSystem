@@ -1,454 +1,2011 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="scroll-smooth">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ER Lab | Expressões Regulares</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'Consolas', 'monospace']
-          },
-          colors: {
-            ink: '#0f172a',
-            brand: '#2563eb',
-            soft: '#eff6ff'
-          }
-        }
-      }
-    }
-  </script>
+  <title>RegEx Elite • Linguagens Regulares — CEULP/ULBRA 2026</title>
+
+  <!-- Google Fonts: Clash Display + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    .glass { backdrop-filter: blur(14px); background: rgba(255,255,255,.82); }
-    .tab-active { background: #2563eb; color: white; box-shadow: 0 12px 30px rgba(37, 99, 235, .25); }
-    .code-token { font-family: 'JetBrains Mono', Consolas, monospace; }
+    /* ═══════════════════════════════════════════════════════
+       CSS CUSTOM PROPERTIES — Design System
+    ═══════════════════════════════════════════════════════ */
+    :root {
+      --bg-deep:    #04040d;
+      --bg-panel:   rgba(10, 12, 35, 0.72);
+      --bg-card:    rgba(18, 22, 58, 0.55);
+      --border:     rgba(100, 130, 255, 0.18);
+      --border-hi:  rgba(130, 160, 255, 0.40);
+
+      --sapphire:   #3b6fff;
+      --violet:     #7c3aed;
+      --cyan:       #22d3ee;
+      --emerald:    #10b981;
+      --rose:       #f43f5e;
+      --amber:      #f59e0b;
+      --lavender:   #a78bfa;
+
+      --text:       #e2e8f8;
+      --text-dim:   #7a88b8;
+      --text-mute:  #3d4a72;
+      --mono:       'JetBrains Mono', monospace;
+      --sans:       'Syne', sans-serif;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       ANIMATED MESH GRADIENT BACKGROUND
+       Material Jackson: Fundo imersivo, estética Cyber-Luxury
+    ═══════════════════════════════════════════════════════ */
+    .mesh-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .mesh-bg::before {
+      content: '';
+      position: absolute;
+      width: 800px; height: 800px;
+      top: -200px; left: -200px;
+      background: radial-gradient(circle, rgba(59,111,255,0.18) 0%, transparent 65%);
+      animation: drift1 18s ease-in-out infinite alternate;
+    }
+    .mesh-bg::after {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      bottom: -150px; right: -150px;
+      background: radial-gradient(circle, rgba(124,58,237,0.16) 0%, transparent 65%);
+      animation: drift2 22s ease-in-out infinite alternate;
+    }
+    .mesh-orb {
+      position: absolute;
+      width: 500px; height: 500px;
+      top: 40%; left: 50%;
+      transform: translate(-50%,-50%);
+      background: radial-gradient(circle, rgba(34,211,238,0.07) 0%, transparent 65%);
+      animation: drift3 15s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift1 { to { transform: translate(60px,40px); } }
+    @keyframes drift2 { to { transform: translate(-40px,-60px); } }
+    @keyframes drift3 { to { transform: translate(-50%,-50%) translate(80px,-50px); } }
+
+    /* Noise grain overlay */
+    .mesh-bg .grain {
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       LAYOUT WRAPPER
+    ═══════════════════════════════════════════════════════ */
+    .app { position: relative; z-index: 1; }
+
+    /* ═══════════════════════════════════════════════════════
+       NAVIGATION — sticky glassmorphism bar
+    ═══════════════════════════════════════════════════════ */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 1.5rem;
+      height: 58px;
+      background: rgba(4, 4, 20, 0.82);
+      backdrop-filter: blur(20px) saturate(1.6);
+      -webkit-backdrop-filter: blur(20px) saturate(1.6);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+
+    .nav-brand {
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      margin-right: 2rem;
+      background: linear-gradient(120deg, var(--sapphire), var(--lavender));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-links { display: flex; gap: 0; }
+    .nav-link {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 0 0.85rem;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      border-bottom: 2px solid transparent;
+      transition: color 0.2s, border-color 0.2s;
+      white-space: nowrap;
+    }
+    .nav-link:hover { color: var(--lavender); border-bottom-color: var(--lavender); }
+    .nav-link.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+    /* ═══════════════════════════════════════════════════════
+       SECTIONS CONTAINER
+    ═══════════════════════════════════════════════════════ */
+    main { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+    section { padding: 4rem 0 2rem; }
+    section:first-of-type { padding-top: 3rem; }
+
+    /* ═══════════════════════════════════════════════════════
+       SECTION HEADER
+    ═══════════════════════════════════════════════════════ */
+    .section-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 0.6rem;
+    }
+    .section-title {
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .section-desc {
+      color: var(--text-dim);
+      max-width: 680px;
+      font-size: 0.95rem;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       GLASS CARD — base component
+    ═══════════════════════════════════════════════════════ */
+    .glass {
+      background: var(--bg-card);
+      backdrop-filter: blur(18px) saturate(1.4);
+      -webkit-backdrop-filter: blur(18px) saturate(1.4);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+    }
+    .glass:hover {
+      border-color: var(--border-hi);
+      box-shadow: 0 8px 40px rgba(59,111,255,0.12);
+      transform: translateY(-2px);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       HERO — Tela inicial explicativa (Seção 1)
+       Ref. material Jackson: slide 4 — definição central
+    ═══════════════════════════════════════════════════════ */
+    #hero {
+      padding: 5rem 0 3rem;
+      display: grid;
+      gap: 3rem;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      border: 1px solid rgba(34,211,238,0.35);
+      color: var(--cyan);
+      margin-bottom: 1.5rem;
+      width: fit-content;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      animation: pulse-dot 1.8s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100%{opacity:1;transform:scale(1);}
+      50%{opacity:0.5;transform:scale(1.4);}
+    }
+
+    .hero-heading {
+      font-size: clamp(2.4rem, 5.5vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+    .hero-heading .grad {
+      background: linear-gradient(135deg, var(--sapphire) 0%, var(--lavender) 50%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--text-dim);
+      max-width: 620px;
+      margin-top: 1.2rem;
+    }
+
+    .hero-team {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 2rem;
+    }
+    .hero-team-chip {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 100px;
+      border: 1px solid var(--border-hi);
+      color: var(--text-dim);
+    }
+
+    .hero-definition {
+      padding: 1.8rem 2rem;
+      border-left: 3px solid var(--sapphire);
+      background: rgba(59,111,255,0.07);
+      border-radius: 0 16px 16px 0;
+    }
+    .hero-definition .label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--sapphire);
+      margin-bottom: 0.5rem;
+    }
+    .hero-definition p { color: var(--text-dim); font-size: 0.95rem; }
+    .hero-definition strong { color: var(--text); }
+
+    /* hierarchy chain */
+    .hierarchy-chain {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 2rem;
+    }
+    .hc-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .hc-bubble {
+      padding: 0.55rem 1.1rem;
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+      border: 1px solid;
+      text-align: center;
+    }
+    .hc-bubble.sym   { background: rgba(124,58,237,0.18); border-color: rgba(124,58,237,0.5); color: var(--lavender); }
+    .hc-bubble.alpha { background: rgba(59,111,255,0.18); border-color: rgba(59,111,255,0.5); color: #93c5fd; }
+    .hc-bubble.str   { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.4); color: var(--cyan); }
+    .hc-bubble.lang  { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #6ee7b7; }
+    .hc-label { font-size: 0.65rem; font-family: var(--mono); color: var(--text-mute); letter-spacing: 0.08em; text-transform: uppercase; }
+    .hc-arrow { color: var(--text-mute); font-size: 1.2rem; align-self: flex-start; padding-top: 0.55rem; }
+
+    /* ═══════════════════════════════════════════════════════
+       CONCEPT GRID — Conceitos básicos, Σ*, Σ+, ε  (Seção 2)
+    ═══════════════════════════════════════════════════════ */
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.2rem;
+    }
+    .concept-card {
+      padding: 1.5rem;
+    }
+    .concept-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .concept-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .concept-card p  { font-size: 0.85rem; color: var(--text-dim); line-height: 1.65; }
+
+    /* ═══════════════════════════════════════════════════════
+       REGULAR SETS — Conjuntos regulares (Seção 3)
+       Ref. material Jackson: slide 6 — definição recursiva
+    ═══════════════════════════════════════════════════════ */
+    .def-box {
+      padding: 1.6rem 2rem;
+      border-radius: 16px;
+      margin-bottom: 1.5rem;
+    }
+    .def-box.primary {
+      background: rgba(59,111,255,0.10);
+      border: 1px solid rgba(59,111,255,0.3);
+    }
+    .def-box h4 {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+    .def-box.primary h4 { color: var(--sapphire); }
+
+    .base-cases, .ops-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .op-card {
+      padding: 1.2rem 1.4rem;
+      border-radius: 14px;
+    }
+    .op-card .op-sym {
+      font-family: var(--mono);
+      font-size: 1.6rem;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .op-card .op-name { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .op-card .op-desc { font-size: 0.82rem; color: var(--text-dim); }
+
+    .op-card.union     { background: rgba(124,58,237,0.14); border: 1px solid rgba(124,58,237,0.35); }
+    .op-card.union     .op-sym { color: var(--lavender); }
+    .op-card.concat    { background: rgba(59,111,255,0.14); border: 1px solid rgba(59,111,255,0.35); }
+    .op-card.concat    .op-sym { color: #93c5fd; }
+    .op-card.kleene    { background: rgba(34,211,238,0.10); border: 1px solid rgba(34,211,238,0.35); }
+    .op-card.kleene    .op-sym { color: var(--cyan); }
+    .op-card.group     { background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.3); }
+    .op-card.group     .op-sym { color: var(--amber); }
+
+    /* ═══════════════════════════════════════════════════════
+       PRECEDENCE TABLE — Precedência dos operadores
+       Ref. material Jackson: slide 11
+    ═══════════════════════════════════════════════════════ */
+    .prec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+    .prec-table thead tr {
+      background: rgba(59,111,255,0.15);
+      border-bottom: 1px solid var(--border-hi);
+    }
+    .prec-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .prec-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(100,130,255,0.08);
+    }
+    .prec-table tbody tr:last-child td { border-bottom: none; }
+    .prec-tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .prec-tag.high   { background: rgba(16,185,129,0.2);  color: #6ee7b7; border: 1px solid rgba(16,185,129,0.4); }
+    .prec-tag.mid    { background: rgba(59,111,255,0.2);  color: #93c5fd; border: 1px solid rgba(59,111,255,0.4); }
+    .prec-tag.low    { background: rgba(244,63,94,0.2);   color: #fda4af; border: 1px solid rgba(244,63,94,0.4); }
+
+    /* ═══════════════════════════════════════════════════════
+       KLEENE IDENTITIES GRID — Relações de identidade
+       Ref. material Jackson: slide 19 — 14 relações
+    ═══════════════════════════════════════════════════════ */
+    .kleene-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.9rem;
+    }
+    .kleene-card {
+      padding: 1rem 1.2rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.25s;
+      perspective: 600px;
+    }
+    .kleene-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px rgba(124,58,237,0.2);
+      border-color: var(--lavender) !important;
+    }
+    .kleene-card .kc-num {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      color: var(--lavender);
+      margin-bottom: 0.4rem;
+      opacity: 0.6;
+    }
+    .kleene-card .kc-formula {
+      font-family: var(--mono);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--cyan);
+      margin-bottom: 0.4rem;
+    }
+    .kleene-card .kc-name {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    .kleene-card.expanded .kc-desc {
+      margin-top: 0.6rem;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+      display: block;
+    }
+    .kc-desc { display: none; }
+
+    /* ═══════════════════════════════════════════════════════
+       STEP-BY-STEP GUIDE — Passo a passo (Seção 6)
+    ═══════════════════════════════════════════════════════ */
+    .steps-list { display: flex; flex-direction: column; gap: 1rem; }
+    .step-item {
+      display: flex;
+      gap: 1.2rem;
+      align-items: flex-start;
+      padding: 1.2rem 1.5rem;
+      border-radius: 16px;
+      background: rgba(18,22,58,0.45);
+      border: 1px solid var(--border);
+      transition: border-color 0.3s;
+    }
+    .step-item:hover { border-color: var(--border-hi); }
+    .step-num {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--sapphire), var(--violet));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-content h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .step-content p  { font-size: 0.85rem; color: var(--text-dim); }
+
+    /* ═══════════════════════════════════════════════════════
+       INVERSION LAB — Inversão/Reverso (Seção 7)
+       Feature central: animação de inversão de cadeia
+    ═══════════════════════════════════════════════════════ */
+    .inversion-lab {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media(max-width:680px){ .inversion-lab { grid-template-columns: 1fr; } }
+
+    .inv-input-area { padding: 1.8rem; }
+    .inv-result-area { padding: 1.8rem; }
+
+    .inv-input-area label {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .inv-input {
+      width: 100%;
+      background: rgba(4,4,20,0.6);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.8rem 1rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .inv-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(34,211,238,0.12);
+    }
+
+    .inv-btn {
+      margin-top: 1rem;
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--sapphire), var(--violet));
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .inv-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .inv-btn:active { transform: translateY(0); }
+
+    /* Symbol strip — visualização dos símbolos separados */
+    .sym-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.8rem;
+      min-height: 2.2rem;
+    }
+    .sym-chip {
+      padding: 0.25rem 0.55rem;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      background: rgba(124,58,237,0.22);
+      border: 1px solid rgba(124,58,237,0.4);
+      color: var(--lavender);
+      animation: popIn 0.2s ease both;
+    }
+    @keyframes popIn {
+      from { opacity:0; transform: scale(0.7) translateY(4px); }
+      to   { opacity:1; transform: scale(1) translateY(0); }
+    }
+
+    /* flip animation for reversed string */
+    .rev-display {
+      font-family: var(--mono);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.08em;
+      word-break: break-all;
+      min-height: 2rem;
+    }
+    .rev-display.animating { animation: flipIn 0.45s cubic-bezier(.36,.07,.19,.97); }
+    @keyframes flipIn {
+      0%  { transform: rotateX(90deg) scaleY(0.3); opacity: 0; }
+      60% { transform: rotateX(-10deg); }
+      100%{ transform: rotateX(0); opacity: 1; }
+    }
+
+    .inv-stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      margin-top: 0.8rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       REGEX SIMULATOR — Simulador (Seção 8)
+       Ref. material Jackson: slides 7,8,12,13,14,15
+    ═══════════════════════════════════════════════════════ */
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 1.5rem;
+    }
+    @media(max-width:780px){ .sim-layout { grid-template-columns: 1fr; } }
+
+    .sim-panel { padding: 1.8rem; }
+
+    .sim-label {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    .sim-input, .sim-select {
+      width: 100%;
+      background: rgba(4,4,20,0.65);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 0.9rem;
+    }
+    .sim-select { cursor: pointer; appearance: none; }
+    .sim-input:focus, .sim-select:focus {
+      border-color: var(--sapphire);
+      box-shadow: 0 0 0 3px rgba(59,111,255,0.14);
+    }
+    /* MATCH/REJECT glow feedback */
+    .sim-input.match  { border-color: var(--emerald) !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.18), 0 0 20px rgba(16,185,129,0.15) !important; }
+    .sim-input.reject { border-color: var(--rose)    !important; box-shadow: 0 0 0 3px rgba(244,63,94,0.18),  0 0 20px rgba(244,63,94,0.15)  !important; }
+
+    .sim-run-btn {
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--sapphire) 0%, var(--violet) 100%);
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      margin-bottom: 1rem;
+    }
+    .sim-run-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* Result badge */
+    .result-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.7rem 1rem;
+      border-radius: 12px;
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: all 0.3s;
+    }
+    .result-badge.neutral { background: rgba(60,70,100,0.3); border-color: var(--border); color: var(--text-dim); }
+    .result-badge.accept  { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.45); color: #6ee7b7; }
+    .result-badge.reject  { background: rgba(244,63,94,0.15);  border-color: rgba(244,63,94,0.45);  color: #fda4af; }
+    .result-badge .badge-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .badge-dot.neutral { background: var(--text-dim); }
+    .badge-dot.accept  { background: var(--emerald); animation: pulse-dot 1.5s infinite; }
+    .badge-dot.reject  { background: var(--rose); }
+
+    /* Explainer box */
+    .explainer {
+      margin-top: 1rem;
+      padding: 1rem 1.2rem;
+      border-radius: 12px;
+      background: rgba(4,4,20,0.5);
+      border: 1px solid var(--border);
+      font-size: 0.83rem;
+      color: var(--text-dim);
+      line-height: 1.65;
+      min-height: 3rem;
+    }
+    .explainer strong { color: var(--lavender); }
+    .explainer .rev-line { color: var(--cyan); margin-top: 0.5rem; display: block; }
+
+    /* Preset examples list */
+    .preset-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .preset-card {
+      padding: 0.9rem 1.1rem;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(18,22,58,0.4);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preset-card:hover {
+      border-color: var(--sapphire);
+      background: rgba(59,111,255,0.08);
+      transform: translateX(4px);
+    }
+    .preset-card.active { border-color: var(--cyan); background: rgba(34,211,238,0.07); }
+    .preset-card .pc-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .preset-card .pc-regex {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--lavender);
+    }
+    .preset-card .pc-alpha {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-mute);
+      margin-top: 0.15rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       EXAMPLE CARDS — Exemplos prontos (Seção 9)
+       Ref. material Jackson: slides 12, 13, 14, 15
+    ═══════════════════════════════════════════════════════ */
+    .example-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.3rem;
+    }
+    .ex-card { padding: 1.6rem; }
+    .ex-card .ex-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+    .ex-card .ex-tag {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+      border: 1px solid rgba(124,58,237,0.4);
+      color: var(--lavender);
+    }
+    .ex-card .ex-regex {
+      font-family: var(--mono);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--cyan);
+      word-break: break-all;
+    }
+    .ex-card .ex-set {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--lavender);
+      margin-bottom: 0.5rem;
+    }
+    .ex-card .ex-lang {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .ex-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .ex-chip {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 8px;
+    }
+    .ex-chip.ok  { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); color: #6ee7b7; }
+    .ex-chip.bad { background: rgba(244,63,94,0.12);  border: 1px solid rgba(244,63,94,0.3);   color: #fda4af; }
+    .ex-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+      margin-bottom: 0.3rem;
+      margin-top: 0.7rem;
+      display: block;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       COMPARISON TABLE — Relação ER / CR / LR (Seção 11)
+    ═══════════════════════════════════════════════════════ */
+    .compare-table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid var(--border); }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.87rem;
+    }
+    .compare-table th {
+      padding: 0.9rem 1.1rem;
+      text-align: left;
+      background: rgba(59,111,255,0.12);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .compare-table td {
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid rgba(100,130,255,0.07);
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    .compare-table tbody tr:last-child td { border-bottom: none; }
+    .compare-table tbody tr:hover td { background: rgba(59,111,255,0.05); color: var(--text); }
+    .compare-table .bold { font-weight: 700; color: var(--text); }
+    .compare-table .code { font-family: var(--mono); color: var(--cyan); }
+
+    /* ═══════════════════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════════════════ */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      color: var(--text-mute);
+      font-size: 0.8rem;
+      font-family: var(--mono);
+      line-height: 2;
+    }
+    footer span { color: var(--text-dim); }
+
+    /* ═══════════════════════════════════════════════════════
+       STAGGER ENTRANCE ANIMATIONS
+    ═══════════════════════════════════════════════════════ */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.55s ease, transform 0.55s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       UTILITIES
+    ═══════════════════════════════════════════════════════ */
+    .mt-1  { margin-top: 0.5rem; }
+    .mt-2  { margin-top: 1rem; }
+    .mt-3  { margin-top: 1.5rem; }
+    .mb-2  { margin-bottom: 1rem; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media(max-width:640px){ .two-col { grid-template-columns: 1fr; } }
+    .mono { font-family: var(--mono); }
+    .accent-v { color: var(--lavender); }
+    .accent-c { color: var(--cyan); }
+    .accent-s { color: var(--sapphire); }
+    .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+    /* scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
   </style>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
-  <header class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
-    <div class="absolute inset-0 opacity-20" aria-hidden="true">
-      <div class="absolute left-10 top-10 h-48 w-48 rounded-full bg-blue-400 blur-3xl"></div>
-      <div class="absolute right-10 bottom-0 h-60 w-60 rounded-full bg-cyan-300 blur-3xl"></div>
+
+<body>
+<div class="mesh-bg">
+  <div class="grain"></div>
+  <div class="mesh-orb"></div>
+</div>
+
+<div class="app">
+
+<!-- ════════════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════════ -->
+<nav>
+  <div class="nav-brand">RegEx Elite</div>
+  <div class="nav-links">
+    <a href="#hero"       class="nav-link active">Início</a>
+    <a href="#conceitos"  class="nav-link">Conceitos</a>
+    <a href="#conj-reg"   class="nav-link">Conjuntos</a>
+    <a href="#expr-reg"   class="nav-link">Expressões</a>
+    <a href="#passo"      class="nav-link">Passo a Passo</a>
+    <a href="#inversao"   class="nav-link">Inversão</a>
+    <a href="#simulador"  class="nav-link">Simulador</a>
+    <a href="#exemplos"   class="nav-link">Exemplos</a>
+    <a href="#identidades" class="nav-link">Identidades</a>
+    <a href="#comparacao" class="nav-link">Comparação</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ════════════════════════════════════════════
+     SEÇÃO 1 — HERO / TELA INICIAL
+     Ref. Jackson: slide 4 — definição central
+════════════════════════════════════════════ -->
+<section id="hero">
+  <div class="fade-in">
+    <div class="hero-badge"><span class="dot"></span>CEULP/ULBRA · Linguagens Formais · 2026</div>
+    <h1 class="hero-heading">
+      Linguagens<br><span class="grad">Regulares</span><br>& Expressões Regulares
+    </h1>
+    <p class="hero-sub">
+      Uma exploração interativa e didática dos conceitos de Conjuntos Regulares, Expressões Regulares e Linguagens Regulares — baseada no material do <strong>Prof. Jackson Gomes de Souza</strong>.
+    </p>
+    <div class="hero-team">
+      <span class="hero-team-chip">Igor Gabriel Silva</span>
+      <span class="hero-team-chip">Jonas Gabriel Amorim</span>
+      <span class="hero-team-chip">Lucas Leal</span>
+      <span class="hero-team-chip">Samuel Matsukami</span>
     </div>
+  </div>
 
-    <div class="relative mx-auto max-w-7xl px-6 py-12 lg:py-16">
-      <div class="max-w-3xl">
-        <span class="inline-flex items-center rounded-full border border-blue-300/40 bg-white/10 px-4 py-1 text-sm font-medium text-blue-100">
-          Linguagens Formais • Expressões Regulares
-        </span>
-        <h1 class="mt-5 text-4xl font-extrabold tracking-tight md:text-6xl">
-          ER Lab: simulador educativo de Expressões Regulares
-        </h1>
-        <p class="mt-5 text-lg leading-8 text-slate-200">
-          Web app para estudar expressões regulares, conjuntos regulares, operadores, precedência e identidades de Kleene com exemplos inspirados no material da disciplina.
-        </p>
-        <div class="mt-7 flex flex-wrap gap-3">
-          <a href="#simulador" class="rounded-2xl bg-blue-500 px-5 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 transition hover:bg-blue-400">Abrir simulador</a>
-          <a href="#glossario" class="rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/20">Ver glossário</a>
-        </div>
+  <!-- Definição central — slide 4 do Jackson -->
+  <div class="hero-definition fade-in">
+    <div class="label">📖 Definição Central (Jackson, slide 4)</div>
+    <p>
+      <strong>Conjuntos e expressões regulares</strong> são notações alternativas usadas para representar a
+      <strong>classe das linguagens regulares</strong> — a mais restrita da Hierarquia de Chomsky.
+      Enquanto um <strong>autômato finito</strong> é usado como <em>reconhecedor</em> de cadeias,
+      uma <strong>expressão regular</strong> é um <em>gerador</em> de cadeias de uma linguagem.
+    </p>
+  </div>
+
+  <!-- Hierarquia de conceitos -->
+  <div class="fade-in">
+    <p class="section-eyebrow">Hierarquia de Conceitos</p>
+    <div class="hierarchy-chain">
+      <div class="hc-item">
+        <div class="hc-bubble sym">a, b, 0, 1</div>
+        <div class="hc-label">Símbolo (σ)</div>
+      </div>
+      <div class="hc-arrow">→</div>
+      <div class="hc-item">
+        <div class="hc-bubble alpha">Σ = {a,b}</div>
+        <div class="hc-label">Alfabeto (Σ)</div>
+      </div>
+      <div class="hc-arrow">→</div>
+      <div class="hc-item">
+        <div class="hc-bubble str">aba, ba, ε</div>
+        <div class="hc-label">Cadeia (w)</div>
+      </div>
+      <div class="hc-arrow">→</div>
+      <div class="hc-item">
+        <div class="hc-bubble lang">{aba, ba, a, ...}</div>
+        <div class="hc-label">Linguagem (L)</div>
       </div>
     </div>
-  </header>
+    <p style="font-size:0.82rem; color:var(--text-mute); margin-top:0.6rem;">
+      Uma <strong style="color:var(--text-dim)">sentença</strong> é qualquer cadeia que pertença à linguagem L.
+    </p>
+  </div>
+</section>
 
-  <main class="mx-auto max-w-7xl px-6 py-10">
-    <section class="mb-8 grid gap-4 md:grid-cols-3">
-      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Conceito</p>
-        <h2 class="mt-2 text-xl font-bold">ER como gerador</h2>
-        <p class="mt-2 text-sm leading-6 text-slate-600">A expressão regular descreve ou gera uma linguagem; o teste verifica se uma cadeia pertence ao padrão informado.</p>
-      </article>
-      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Precedência</p>
-        <h2 class="mt-2 text-xl font-bold">*, concatenação, união</h2>
-        <p class="mt-2 text-sm leading-6 text-slate-600">O fechamento tem maior prioridade, depois a concatenação, e por último a união.</p>
-      </article>
-      <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">JavaScript</p>
-        <h2 class="mt-2 text-xl font-bold">Sintaxe prática</h2>
-        <p class="mt-2 text-sm leading-6 text-slate-600">O simulador usa RegExp do JavaScript. O símbolo acadêmico <span class="code-token">+</span> para união é detectado e explicado.</p>
-      </article>
-    </section>
+<!-- ════════════════════════════════════════════
+     SEÇÃO 2 — CONCEITOS BÁSICOS
+     Σ*, Σ+, ε, D*, D+, DD*
+════════════════════════════════════════════ -->
+<section id="conceitos">
+  <p class="section-eyebrow fade-in">Seção 02</p>
+  <h2 class="section-title fade-in">Conceitos Básicos</h2>
+  <p class="section-desc fade-in">Fundamentos que você precisa conhecer antes de mergulhar nas expressões regulares.</p>
 
-    <nav class="sticky top-0 z-20 mb-8 rounded-3xl border border-slate-200 glass p-2 shadow-sm">
-      <div class="grid gap-2 sm:grid-cols-4">
-        <button class="tab-btn tab-active rounded-2xl px-4 py-3 text-sm font-bold transition" data-tab="simulador">Simulador</button>
-        <button class="tab-btn rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100" data-tab="glossario">Glossário</button>
-        <button class="tab-btn rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100" data-tab="exemplos">Exemplos do PDF</button>
-        <button class="tab-btn rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100" data-tab="identidades">Identidades</button>
-      </div>
-    </nav>
-
-    <section id="simulador" class="tab-panel grid gap-8 lg:grid-cols-[1.1fr_.9fr]">
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Simulador de ER</p>
-            <h2 class="mt-2 text-2xl font-extrabold text-slate-900">Teste uma expressão regular</h2>
-            <p class="mt-2 text-sm leading-6 text-slate-600">Digite uma ER em sintaxe JavaScript e uma cadeia para verificar se ocorre match.</p>
-          </div>
-          <label class="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">
-            <input id="anchorMode" type="checkbox" class="h-4 w-4 rounded border-slate-300" checked>
-            Match exato
-          </label>
-        </div>
-
-        <div class="mt-6 grid gap-5">
-          <label class="block">
-            <span class="mb-2 block text-sm font-bold text-slate-700">Expressão regular</span>
-            <input id="regexInput" class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-mono text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" value="[0-9][0-9]*" placeholder="Ex.: (c|d)*cc(c|d)*" />
-          </label>
-
-          <label class="block">
-            <span class="mb-2 block text-sm font-bold text-slate-700">String de teste</span>
-            <input id="testInput" class="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 font-mono text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" value="27" placeholder="Ex.: ccd" />
-          </label>
-
-          <div class="grid gap-3 sm:grid-cols-3">
-            <button id="runBtn" class="rounded-2xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">Testar match</button>
-            <button id="clearBtn" class="rounded-2xl border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 transition hover:bg-slate-50">Limpar</button>
-            <button id="explainBtn" class="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 font-bold text-blue-700 transition hover:bg-blue-100">Explicar</button>
-          </div>
-        </div>
-
-        <div id="resultBox" class="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <p class="text-sm font-semibold text-slate-500">Resultado</p>
-          <p id="resultText" class="mt-2 text-xl font-extrabold text-slate-800">Aguardando teste...</p>
-          <p id="resultDetail" class="mt-2 text-sm leading-6 text-slate-600">Use os exemplos ou digite sua própria expressão regular.</p>
-        </div>
-
-        <div id="noteBox" class="mt-4 hidden rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900"></div>
-      </div>
-
-      <aside class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Tradução didática</p>
-        <h3 class="mt-2 text-2xl font-extrabold text-slate-900">Do PDF para JavaScript</h3>
-        <div class="mt-5 space-y-4 text-sm leading-6 text-slate-600">
-          <div class="rounded-2xl bg-slate-50 p-4">
-            <p class="font-bold text-slate-800">União</p>
-            <p>No material, pode aparecer como <span class="code-token">x|y</span> ou <span class="code-token">x+y</span>. No JavaScript, use <span class="code-token">x|y</span>. O <span class="code-token">+</span> do JavaScript significa “uma ou mais ocorrências”.</p>
-          </div>
-          <div class="rounded-2xl bg-slate-50 p-4">
-            <p class="font-bold text-slate-800">Concatenação</p>
-            <p>No PDF, <span class="code-token">xy</span> ou <span class="code-token">x·y</span>. No JavaScript, escreva os símbolos juntos: <span class="code-token">ab</span>.</p>
-          </div>
-          <div class="rounded-2xl bg-slate-50 p-4">
-            <p class="font-bold text-slate-800">Fechamento</p>
-            <p><span class="code-token">x*</span> significa zero ou mais repetições de <span class="code-token">x</span>.</p>
-          </div>
-        </div>
-      </aside>
-    </section>
-
-    <section id="glossario" class="tab-panel hidden">
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Glossário interativo</p>
-        <h2 class="mt-2 text-3xl font-extrabold text-slate-900">Hierarquia de precedência dos operadores</h2>
-        <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600">A precedência define a ordem de leitura quando não há parênteses. Parênteses podem alterar a precedência localmente.</p>
-        <div id="glossaryCards" class="mt-7 grid gap-5 lg:grid-cols-3"></div>
-      </div>
-    </section>
-
-    <section id="exemplos" class="tab-panel hidden">
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Exemplos práticos</p>
-        <h2 class="mt-2 text-3xl font-extrabold text-slate-900">Carregar exemplos do material</h2>
-        <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600">Clique em um exemplo para preencher o simulador automaticamente.</p>
-        <div id="exampleButtons" class="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
-      </div>
-    </section>
-
-    <section id="identidades" class="tab-panel hidden">
-      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Consulta rápida</p>
-        <h2 class="mt-2 text-3xl font-extrabold text-slate-900">Relações de identidade de Kleene</h2>
-        <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-600">As identidades abaixo servem para simplificar, transformar e reconhecer equivalências entre expressões regulares.</p>
-        <div class="mt-6 overflow-hidden rounded-3xl border border-slate-200">
-          <table class="w-full border-collapse text-left text-sm">
-            <thead class="bg-slate-100 text-slate-700">
-              <tr>
-                <th class="px-4 py-3 font-extrabold">Identidade</th>
-                <th class="px-4 py-3 font-extrabold">Ideia principal</th>
-              </tr>
-            </thead>
-            <tbody id="identityRows" class="divide-y divide-slate-200 bg-white"></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="mx-auto max-w-7xl px-6 pb-10">
-    <div class="rounded-3xl border border-slate-200 bg-white p-6 text-sm leading-6 text-slate-600 shadow-sm">
-      <p class="font-bold text-slate-900">Observação acadêmica</p>
-      <p class="mt-2">Este simulador usa a engine de expressões regulares do JavaScript para fins didáticos. A notação do material de Linguagens Formais é conceitual; por isso, alguns símbolos precisam ser adaptados para teste computacional.</p>
+  <div class="concept-grid">
+    <!-- ε -->
+    <div class="glass concept-card fade-in">
+      <div class="concept-icon" style="background:rgba(124,58,237,0.2); color:var(--lavender); border:1px solid rgba(124,58,237,0.4);">ε</div>
+      <h3>Cadeia Vazia (ε)</h3>
+      <p>A cadeia vazia é a cadeia com <strong>zero símbolos</strong>. Ela pertence a Σ* para qualquer alfabeto Σ. Representa "nada" — e é a base do fechamento de Kleene.</p>
     </div>
-  </footer>
+    <!-- Σ* -->
+    <div class="glass concept-card fade-in">
+      <div class="concept-icon" style="background:rgba(59,111,255,0.2); color:#93c5fd; border:1px solid rgba(59,111,255,0.4);">Σ*</div>
+      <h3>Fechamento de Kleene (Σ*)</h3>
+      <p>Conjunto de <strong>todas</strong> as cadeias possíveis sobre Σ, incluindo a cadeia vazia ε. Se Σ = {a,b}, então Σ* = {ε, a, b, aa, ab, ba, bb, aaa, ...} — infinito!</p>
+    </div>
+    <!-- Σ+ -->
+    <div class="glass concept-card fade-in">
+      <div class="concept-icon" style="background:rgba(34,211,238,0.15); color:var(--cyan); border:1px solid rgba(34,211,238,0.4);">Σ⁺</div>
+      <h3>Fechamento Transitivo (Σ⁺)</h3>
+      <p>Todas as cadeias sobre Σ com <strong>comprimento ≥ 1</strong>. Equivale a Σ* sem a cadeia vazia: Σ⁺ = Σ* − {ε}. É a "versão obrigatória" do Kleene.</p>
+    </div>
+    <!-- D*, D+, DD* -->
+    <div class="glass concept-card fade-in">
+      <div class="concept-icon" style="background:rgba(16,185,129,0.15); color:#6ee7b7; border:1px solid rgba(16,185,129,0.4);">D</div>
+      <h3>D*, D⁺ e DD* (diferença)</h3>
+      <p><strong class="mono" style="color:var(--cyan)">D*</strong> inclui ε. <strong class="mono" style="color:var(--cyan)">D⁺</strong> = DD* exige ao menos 1 dígito (sem ε). <strong class="mono" style="color:var(--cyan)">DD*</strong> é a forma explícita de D⁺ — um dígito seguido de zero ou mais. Todos representam os números naturais, mas DD* deixa claro.</p>
+    </div>
+    <!-- Linguagem Regular -->
+    <div class="glass concept-card fade-in">
+      <div class="concept-icon" style="background:rgba(245,158,11,0.15); color:var(--amber); border:1px solid rgba(245,158,11,0.4);">L</div>
+      <h3>Linguagem Regular</h3>
+      <p>Um <strong>conjunto de cadeias</strong> que obedece a um padrão definível por expressão regular ou autômato finito. É a classe mais restrita da Hierarquia de Chomsky (Tipo 3).</p>
+    </div>
+    <!-- Sentença -->
+    <div class="glass concept-card fade-in">
+      <div class="concept-icon" style="background:rgba(244,63,94,0.15); color:#fda4af; border:1px solid rgba(244,63,94,0.35);">w</div>
+      <h3>Sentença</h3>
+      <p>Uma <strong>sentença</strong> é qualquer cadeia w que pertença à linguagem L, ou seja, w ∈ L. Se a linguagem é "números naturais", então "42" é uma sentença dessa linguagem.</p>
+    </div>
+  </div>
+</section>
 
-  <script>
-    const $ = (selector) => document.querySelector(selector);
-    const $$ = (selector) => document.querySelectorAll(selector);
+<!-- ════════════════════════════════════════════
+     SEÇÃO 3 — CONJUNTOS REGULARES
+     Ref. Jackson: slides 6, 7, 8 — definição recursiva
+════════════════════════════════════════════ -->
+<section id="conj-reg">
+  <p class="section-eyebrow fade-in">Seção 03</p>
+  <h2 class="section-title fade-in">Conjuntos Regulares</h2>
+  <p class="section-desc fade-in">
+    Conjuntos regulares sobre Σ são <strong>linguagens definidas recursivamente</strong>.
+    Qualquer linguagem regular pode ser construída a partir dos casos base usando as operações abaixo.
+  </p>
 
-    const regexInput = $('#regexInput');
-    const testInput = $('#testInput');
-    const anchorMode = $('#anchorMode');
-    const resultBox = $('#resultBox');
-    const resultText = $('#resultText');
-    const resultDetail = $('#resultDetail');
-    const noteBox = $('#noteBox');
+  <!-- Casos Base — slide 6 Jackson -->
+  <div class="def-box primary fade-in">
+    <h4>📌 Casos Base (Jackson, slide 6)</h4>
+    <div class="base-cases">
+      <div class="glass concept-card" style="background:rgba(4,4,20,0.4);">
+        <div class="concept-icon" style="background:rgba(244,63,94,0.15); color:#fda4af; border:1px solid rgba(244,63,94,0.3);">∅</div>
+        <h3>Conjunto Vazio</h3>
+        <p><strong>∅ é um conjunto regular</strong> sobre Σ. Representa a linguagem sem nenhuma cadeia. A ER ∅ não reconhece nada.</p>
+      </div>
+      <div class="glass concept-card" style="background:rgba(4,4,20,0.4);">
+        <div class="concept-icon" style="background:rgba(124,58,237,0.18); color:var(--lavender); border:1px solid rgba(124,58,237,0.4);">{ε}</div>
+        <h3>Conjunto com ε</h3>
+        <p><strong>{ε} é um conjunto regular</strong> sobre Σ. Representa a linguagem que contém <em>apenas</em> a cadeia vazia.</p>
+      </div>
+      <div class="glass concept-card" style="background:rgba(4,4,20,0.4);">
+        <div class="concept-icon" style="background:rgba(34,211,238,0.12); color:var(--cyan); border:1px solid rgba(34,211,238,0.35);">{σ}</div>
+        <h3>Símbolo unitário</h3>
+        <p><strong>{σ}, ∀σ ∈ Σ,</strong> é um conjunto regular. Cada símbolo do alfabeto forma por si só um conjunto regular (com uma única cadeia).</p>
+      </div>
+    </div>
+  </div>
 
-    const glossary = [
-      {
-        title: '1. Fechamento de Kleene',
-        symbol: 'x*',
-        precedence: 'Mais alta',
-        description: 'Representa zero ou mais repetições da expressão x. Exemplo: c* aceita ε, c, cc, ccc...',
-        js: 'Mesmo símbolo no JavaScript: x*.'
-      },
-      {
-        title: '2. Concatenação',
-        symbol: 'xy ou x·y',
-        precedence: 'Intermediária',
-        description: 'Representa a junção de duas linguagens ou símbolos. Exemplo: ab representa a seguido de b.',
-        js: 'No JavaScript, escreva junto: ab.'
-      },
-      {
-        title: '3. União',
-        symbol: 'x|y ou x+y',
-        precedence: 'Mais baixa',
-        description: 'Representa escolha entre x ou y, equivalente à união de conjuntos regulares.',
-        js: 'No JavaScript, use x|y. Cuidado: + significa uma ou mais ocorrências.'
-      }
-    ];
+  <!-- Operações — slide 6 Jackson -->
+  <p class="section-eyebrow fade-in mt-3">Operações sobre Conjuntos Regulares</p>
+  <p style="color:var(--text-dim); font-size:0.88rem; margin-bottom:1.2rem;" class="fade-in">
+    Se X e Y são conjuntos regulares sobre Σ, os seguintes conjuntos <strong>também são regulares</strong>:
+  </p>
+  <div class="ops-grid fade-in">
+    <div class="op-card union glass">
+      <span class="op-sym">X ∪ Y</span>
+      <div class="op-name">União</div>
+      <div class="op-desc">Contém as cadeias que estão em X <em>ou</em> em Y. Na ER: <code class="mono accent-v">x | y</code> ou <code class="mono accent-v">x + y</code>.</div>
+    </div>
+    <div class="op-card concat glass">
+      <span class="op-sym">X · Y</span>
+      <div class="op-name">Concatenação</div>
+      <div class="op-desc">Todas as cadeias formadas juntando uma cadeia de X com uma de Y. Na ER: <code class="mono accent-c">xy</code>.</div>
+    </div>
+    <div class="op-card kleene glass">
+      <span class="op-sym">X*</span>
+      <div class="op-name">Fechamento de Kleene</div>
+      <div class="op-desc">Zero ou mais concatenações de X consigo mesmo. Inclui sempre ε. Na ER: <code class="mono accent-c">x*</code>.</div>
+    </div>
+    <div class="op-card group glass">
+      <span class="op-sym">(X)</span>
+      <div class="op-name">Agrupamento</div>
+      <div class="op-desc">Parênteses alteram a precedência dos operadores, assim como na matemática tradicional.</div>
+    </div>
+  </div>
 
-    const examples = [
-      {
-        title: 'Números naturais decimais',
-        formal: 'N = DD*',
-        jsRegex: '[0-9][0-9]*',
-        test: '27',
-        explanation: 'D representa qualquer algarismo de 0 a 9. DD* exige pelo menos um dígito.'
-      },
-      {
-        title: 'Números reais decimais sem sinal',
-        formal: 'R = DD*.D* ∪ D*.DD*',
-        jsRegex: '([0-9][0-9]*\\.[0-9]*|[0-9]*\\.[0-9][0-9]*)',
-        test: '915.4',
-        explanation: 'Aceita casos como 915.4, .315 e 47., respeitando a ideia do material.'
-      },
-      {
-        title: "Cadeias que contenham 'cc'",
-        formal: 'r = (c + d)*(cc)(c + d)*',
-        jsRegex: '(c|d)*cc(c|d)*',
-        test: 'dccd',
-        explanation: 'Sobre Σ = {c,d}, aceita qualquer cadeia que tenha cc como subpalavra.'
-      },
-      {
-        title: 'Começa com a e termina com b ou c',
-        formal: 'a(a|b|c|d)*(b|c)',
-        jsRegex: 'a(a|b|c|d)*(b|c)',
-        test: 'adbc',
-        explanation: 'Exemplo com Σ = {a,b,c,d}.'
-      },
-      {
-        title: 'Linguagem 1*01*',
-        formal: '1*01*',
-        jsRegex: '1*01*',
-        test: '111011',
-        explanation: 'Começa com qualquer quantidade de 1, tem um 0 obrigatório, e termina com qualquer quantidade de 1.'
-      },
-      {
-        title: 'Apenas a, b, c com pelo menos um símbolo',
-        formal: '(a|b|c)+',
-        jsRegex: '(a|b|c)+',
-        test: 'abcab',
-        explanation: 'No PDF, x+ é citado como fechamento transitivo: uma ou mais ocorrências.'
-      }
-    ];
+  <!-- Exemplos do Jackson: slides 7 e 8 -->
+  <div class="mt-3 fade-in">
+    <p class="section-eyebrow">Exemplos do material (slides 7 e 8)</p>
+    <div class="two-col mt-2">
+      <div class="glass" style="padding:1.4rem;">
+        <div class="mono" style="font-size:0.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--text-mute); margin-bottom:.5rem;">Números Naturais — slide 7</div>
+        <div class="mono accent-c" style="font-size:1.3rem; font-weight:700; margin-bottom:.4rem;">N = DD*</div>
+        <p style="font-size:.84rem; color:var(--text-dim);">Com D = {0,1,...,9}, a linguagem N dos números naturais é o conjunto regular DD*. Equivalentemente: D⁺. Aceita: <span class="mono" style="color:#6ee7b7">27, 1, 999</span>. Rejeita: <span class="mono" style="color:#fda4af">ε, abc</span>.</p>
+      </div>
+      <div class="glass" style="padding:1.4rem;">
+        <div class="mono" style="font-size:0.7rem; letter-spacing:.1em; text-transform:uppercase; color:var(--text-mute); margin-bottom:.5rem;">Números Reais — slide 8</div>
+        <div class="mono accent-c" style="font-size:1.1rem; font-weight:700; margin-bottom:.4rem;">R = DD*.D* ∪ D*.DD*</div>
+        <p style="font-size:.84rem; color:var(--text-dim);">Números reais decimais sem sinal sobre D ∪ {.}. Exemplos: <span class="mono" style="color:#6ee7b7">27, 915.4, .315, 47.</span> Note que N ⊂ R mas R ≠ N.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-    const identities = [
-      ['x | y = y | x', 'Comutatividade da união.'],
-      ['∅* = ε', 'O fechamento do conjunto vazio gera a cadeia vazia.'],
-      ['x | (y | z) = (x | y) | z', 'Associatividade da união.'],
-      ['x(yz) = (xy)z', 'Associatividade da concatenação.'],
-      ['x(y | z) = xy | xz', 'Distributividade à esquerda.'],
-      ['(x | y)z = xz | yz', 'Distributividade à direita.'],
-      ['xε = εx = x', 'A cadeia vazia é elemento neutro da concatenação.'],
-      ['x∅ = ∅x = ∅', 'Concatenar com vazio gera vazio.'],
-      ['ε∅ = ∅ε = ∅', 'Caso particular da concatenação com vazio.'],
-      ['x* = x | x*', 'Identidade apresentada para fechamento.'],
-      ['(x*)* = x*', 'Aplicar fechamento novamente não altera o resultado.'],
-      ['x | x = x', 'Idempotência da união.'],
-      ['x | ∅ = x', 'Vazio é neutro da união.'],
-      ['(xy)*x = x(yx)*', 'Equivalência algébrica útil em transformações.']
-    ];
+<!-- ════════════════════════════════════════════
+     SEÇÃO 4 — EXPRESSÕES REGULARES + PRECEDÊNCIA
+     Ref. Jackson: slides 10, 11, 12
+════════════════════════════════════════════ -->
+<section id="expr-reg">
+  <p class="section-eyebrow fade-in">Seção 04</p>
+  <h2 class="section-title fade-in">Expressões Regulares</h2>
+  <p class="section-desc fade-in">
+    Notação alternativa desenvolvida por <strong>Kleene (décadas de 1950)</strong>.
+    Uma expressão regular (ER) é um <em>gerador</em> de cadeias de uma linguagem — L(r) ou GERA(r).
+  </p>
 
-    function setTab(tabName) {
-      $$('.tab-panel').forEach(panel => panel.classList.add('hidden'));
-      $('#' + tabName).classList.remove('hidden');
-      $$('.tab-btn').forEach(btn => {
-        btn.classList.remove('tab-active');
-        btn.classList.add('text-slate-700', 'hover:bg-slate-100');
-      });
-      const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
-      activeBtn.classList.add('tab-active');
-      activeBtn.classList.remove('text-slate-700', 'hover:bg-slate-100');
-    }
+  <!-- Definição recursiva — slide 10 Jackson -->
+  <div class="def-box primary fade-in">
+    <h4>📐 Definição Recursiva das ERs (Jackson, slide 10)</h4>
+    <div class="base-cases">
+      <div class="glass concept-card" style="background:rgba(4,4,20,0.4);">
+        <div class="concept-icon" style="background:rgba(244,63,94,0.15); color:#fda4af; border:1px solid rgba(244,63,94,0.3);">∅</div>
+        <h3>∅ — Conjunto vazio</h3>
+        <p>ER que denota o conjunto vazio. Nenhuma cadeia é gerada.</p>
+      </div>
+      <div class="glass concept-card" style="background:rgba(4,4,20,0.4);">
+        <div class="concept-icon" style="background:rgba(124,58,237,0.18); color:var(--lavender); border:1px solid rgba(124,58,237,0.4);">ε</div>
+        <h3>ε — Cadeia vazia</h3>
+        <p>ER que denota {ε}. Gera apenas a cadeia vazia.</p>
+      </div>
+      <div class="glass concept-card" style="background:rgba(4,4,20,0.4);">
+        <div class="concept-icon" style="background:rgba(34,211,238,0.12); color:var(--cyan); border:1px solid rgba(34,211,238,0.35);">σ</div>
+        <h3>σ ∈ Σ — Símbolo</h3>
+        <p>Cada símbolo do alfabeto é uma ER e denota {σ}.</p>
+      </div>
+    </div>
+    <div class="ops-grid mt-2">
+      <div class="op-card union glass">
+        <span class="op-sym">x | y</span>
+        <div class="op-name">União (x+y ou x|y)</div>
+        <div class="op-desc">Denota X ∪ Y. Operador de <strong>menor</strong> precedência.</div>
+      </div>
+      <div class="op-card concat glass">
+        <span class="op-sym">xy</span>
+        <div class="op-name">Concatenação</div>
+        <div class="op-desc">Denota XY. Precedência intermediária.</div>
+      </div>
+      <div class="op-card kleene glass">
+        <span class="op-sym">x*</span>
+        <div class="op-name">Kleene (zero ou mais)</div>
+        <div class="op-desc">Denota X*. <strong>Maior</strong> precedência de todas.</div>
+      </div>
+      <div class="op-card group glass">
+        <span class="op-sym">x⁺</span>
+        <div class="op-name">Kleene Transitivo (≥1)</div>
+        <div class="op-desc">xx* = x⁺. Um ou mais. Nunca aceita ε.</div>
+      </div>
+    </div>
+  </div>
 
-    function renderGlossary() {
-      $('#glossaryCards').innerHTML = glossary.map(item => `
-        <article class="rounded-3xl border border-slate-200 bg-slate-50 p-6 transition hover:-translate-y-1 hover:shadow-lg">
-          <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">${item.precedence}</span>
-          <h3 class="mt-4 text-xl font-extrabold text-slate-900">${item.title}</h3>
-          <p class="mt-3 code-token text-2xl font-black text-blue-700">${item.symbol}</p>
-          <p class="mt-3 text-sm leading-6 text-slate-600">${item.description}</p>
-          <p class="mt-4 rounded-2xl bg-white p-4 text-sm leading-6 text-slate-700"><strong>Na prática:</strong> ${item.js}</p>
-        </article>
-      `).join('');
-    }
-
-    function renderExamples() {
-      $('#exampleButtons').innerHTML = examples.map((ex, index) => `
-        <button class="example-btn rounded-3xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-1 hover:border-blue-300 hover:bg-blue-50 hover:shadow-lg" data-index="${index}">
-          <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-blue-700">Exemplo ${index + 1}</span>
-          <h3 class="mt-4 text-lg font-extrabold text-slate-900">${ex.title}</h3>
-          <p class="mt-2 code-token text-sm font-bold text-slate-700">${ex.formal}</p>
-          <p class="mt-3 text-sm leading-6 text-slate-600">${ex.explanation}</p>
-        </button>
-      `).join('');
-    }
-
-    function renderIdentities() {
-      $('#identityRows').innerHTML = identities.map(([identity, idea]) => `
-        <tr class="transition hover:bg-blue-50">
-          <td class="px-4 py-4 code-token text-base font-bold text-slate-900">${identity}</td>
-          <td class="px-4 py-4 text-slate-600">${idea}</td>
+  <!-- Tabela de Precedência — slide 11 Jackson -->
+  <p class="section-eyebrow fade-in mt-3">Tabela de Precedência dos Operadores (slide 11)</p>
+  <div class="glass mt-2 fade-in" style="overflow:hidden;">
+    <table class="prec-table">
+      <thead>
+        <tr>
+          <th>Precedência</th>
+          <th>Operador</th>
+          <th>Símbolo</th>
+          <th>Exemplo</th>
+          <th>Leitura</th>
         </tr>
-      `).join('');
-    }
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="prec-tag high">Mais Alta — 1°</span></td>
+          <td>Fechamento de Kleene</td>
+          <td class="mono accent-c">x*</td>
+          <td class="mono accent-c">ab*</td>
+          <td style="font-size:0.8rem; color:var(--text-dim);">a concatenado com (b*)</td>
+        </tr>
+        <tr>
+          <td><span class="prec-tag mid">Intermediária — 2°</span></td>
+          <td>Concatenação</td>
+          <td class="mono accent-c">xy</td>
+          <td class="mono accent-c">abc</td>
+          <td style="font-size:0.8rem; color:var(--text-dim);">a concatenado com b concatenado com c</td>
+        </tr>
+        <tr>
+          <td><span class="prec-tag low">Mais Baixa — 3°</span></td>
+          <td>União</td>
+          <td class="mono accent-c">x | y &nbsp; x + y</td>
+          <td class="mono accent-c">a | bc*</td>
+          <td style="font-size:0.8rem; color:var(--text-dim);">a OU (b concat (c*))</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-dim); font-size:0.82rem;">(modificador)</td>
+          <td>Parênteses</td>
+          <td class="mono accent-c">(x)</td>
+          <td class="mono accent-c">(a|b)*</td>
+          <td style="font-size:0.8rem; color:var(--text-dim);">zero ou mais de (a ou b)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-    function detectAcademicNotation(pattern) {
-      const notes = [];
-      if (pattern.includes('∪')) {
-        notes.push('Você usou ∪, símbolo acadêmico de união. No JavaScript, troque por |.');
-      }
-      if (pattern.includes('ε') || pattern.includes('ϵ')) {
-        notes.push('Você usou ε, cadeia vazia. Em JavaScript, represente cadeia vazia com uma alternativa vazia, dependendo do contexto.');
-      }
-      if (pattern.includes('∅')) {
-        notes.push('Você usou ∅, conjunto vazio. JavaScript RegExp não tem símbolo direto para conjunto vazio; uma aproximação prática é (?!) para nunca casar.');
-      }
-      if (pattern.includes('·')) {
-        notes.push('Você usou · para concatenação. No JavaScript, remova o ponto e escreva os símbolos juntos.');
-      }
-      if (/[A-Za-z0-9)]\+[A-Za-z0-9(]/.test(pattern) || pattern.includes(' + ')) {
-        notes.push('Atenção: no PDF, + pode representar união, como x+y. No JavaScript, + significa “uma ou mais ocorrências”. Para união, use |.');
-      }
-      return notes;
-    }
+  <!-- Exemplo de precedência — slide 12 Jackson -->
+  <div class="glass mt-3 fade-in" style="padding:1.6rem;">
+    <p class="section-eyebrow">Exemplo de precedência (Jackson, slide 12)</p>
+    <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-top:1rem;">
+      <div style="flex:1; min-width:200px;">
+        <div class="mono accent-c" style="font-size:1.1rem; font-weight:700;">(ab | c*)</div>
+        <div style="font-size:0.82rem; color:var(--text-dim); margin-top:.3rem;">= ((ab) | (c*)) → {ab, ε, c, cc, ccc, ...}</div>
+      </div>
+      <div style="flex:1; min-width:200px;">
+        <div class="mono accent-c" style="font-size:1.1rem; font-weight:700;">a(b|c)*</div>
+        <div style="font-size:0.82rem; color:var(--text-dim); margin-top:.3rem;">→ {a, ab, ac, abc, abb, ...} começa com a</div>
+      </div>
+      <div style="flex:1; min-width:200px;">
+        <div class="mono accent-c" style="font-size:1.1rem; font-weight:700;">(ab|c)*</div>
+        <div style="font-size:0.82rem; color:var(--text-dim); margin-top:.3rem;">→ {ε, ab, c, abc, cab, abab, cc, ...}</div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    function normalizePattern(pattern) {
-      return anchorMode.checked ? `^(?:${pattern})$` : pattern;
-    }
+<!-- ════════════════════════════════════════════
+     SEÇÃO 5 — PASSO A PASSO
+════════════════════════════════════════════ -->
+<section id="passo">
+  <p class="section-eyebrow fade-in">Seção 05</p>
+  <h2 class="section-title fade-in">Passo a Passo: Como usar uma ER</h2>
+  <p class="section-desc fade-in">Guia prático para construir e testar uma expressão regular do zero.</p>
 
-    function runTest() {
-      const pattern = regexInput.value.trim();
-      const text = testInput.value;
-      const notes = detectAcademicNotation(pattern);
+  <div class="steps-list fade-in">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Defina o Alfabeto (Σ)</h4>
+        <p>Determine quais símbolos podem aparecer na linguagem. Ex.: Σ = {0,1} para binários; Σ = {a,b,c} para palavras; D = {0..9} para dígitos.</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Descreva o Padrão desejado</h4>
+        <p>Em linguagem natural: "cadeias que começam com a" ou "sequências de dígitos com pelo menos um". Esclareça se ε é aceito.</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Monte a Expressão Regular</h4>
+        <p>Use os operadores: <code class="mono accent-c">*</code> (zero ou mais), <code class="mono accent-c">+</code> (um ou mais), <code class="mono accent-c">|</code> (união), concatenação implícita e parênteses para agrupar.</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Teste Cadeias de Exemplo</h4>
+        <p>Escolha cadeias que <em>deveriam</em> ser aceitas e outras que <em>não deveriam</em>. Use o simulador abaixo para verificar.</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h4>Verifique Pertencimento (w ∈ L?)</h4>
+        <p>A cadeia está na linguagem? O resultado é "pertence" (✓) ou "não pertence" (✗). Observe o conjunto regular correspondente.</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <h4>Analise o Reverso (wᴿ)</h4>
+        <p>Inverta a cadeia e observe se o reverso também pertence. O reverso de uma linguagem regular também é regular!</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-      if (!pattern) {
-        showResult('Informe uma expressão regular.', 'Digite um padrão para executar o teste.', 'neutral');
-        return;
-      }
+<!-- ════════════════════════════════════════════
+     SEÇÃO 6 — INVERSÃO / REVERSO
+     Feature central de interatividade animada
+════════════════════════════════════════════ -->
+<section id="inversao">
+  <p class="section-eyebrow fade-in">Seção 06</p>
+  <h2 class="section-title fade-in">Inversão de Cadeias (Reverso)</h2>
+  <p class="section-desc fade-in">
+    A <strong>inversão</strong> de uma cadeia w coloca seus símbolos em ordem contrária.
+    Se w = abc, então wᴿ = cba. O <strong>reverso de uma linguagem</strong> é o conjunto
+    formado pelo reverso de cada cadeia pertencente a ela — e continua sendo regular!
+  </p>
 
-      try {
-        const regex = new RegExp(normalizePattern(pattern));
-        const matched = regex.test(text);
-        showResult(
-          matched ? 'MATCH: a cadeia foi aceita.' : 'NÃO DEU MATCH: a cadeia foi rejeitada.',
-          `Expressão usada: /${normalizePattern(pattern)}/ • String testada: "${text}"`,
-          matched ? 'success' : 'error'
-        );
-      } catch (error) {
-        showResult('Erro de sintaxe na expressão regular.', error.message, 'error');
-      }
+  <div class="inversion-lab fade-in">
+    <!-- Input -->
+    <div class="glass inv-input-area">
+      <p class="section-eyebrow mb-2">Digite uma cadeia</p>
 
-      renderNotes(notes);
-    }
+      <label>Cadeia w</label>
+      <input id="invInput" class="inv-input" type="text" placeholder="Ex.: abcba" maxlength="40" />
 
-    function showResult(title, detail, type) {
-      resultText.textContent = title;
-      resultDetail.textContent = detail;
-      resultBox.className = 'mt-6 rounded-3xl border p-5 ' + (
-        type === 'success' ? 'border-emerald-200 bg-emerald-50' :
-        type === 'error' ? 'border-red-200 bg-red-50' :
-        'border-slate-200 bg-slate-50'
-      );
-      resultText.className = 'mt-2 text-xl font-extrabold ' + (
-        type === 'success' ? 'text-emerald-800' :
-        type === 'error' ? 'text-red-800' :
-        'text-slate-800'
-      );
-    }
+      <div style="margin-top:1rem;">
+        <label>Símbolos de w (separados)</label>
+        <div id="symStrip" class="sym-strip"></div>
+      </div>
 
-    function renderNotes(notes) {
-      if (!notes.length) {
-        noteBox.classList.add('hidden');
-        noteBox.innerHTML = '';
-        return;
-      }
-      noteBox.classList.remove('hidden');
-      noteBox.innerHTML = `<strong>Nota visual sobre a notação do PDF:</strong><ul class="mt-2 list-disc pl-5">${notes.map(note => `<li>${note}</li>`).join('')}</ul>`;
-    }
+      <button class="inv-btn" id="invBtn">↩ Inverter Cadeia</button>
+    </div>
 
-    function explainCurrentRegex() {
-      const pattern = regexInput.value.trim();
-      const notes = detectAcademicNotation(pattern);
-      const explanation = [];
-      if (pattern.includes('*')) explanation.push('Contém fechamento de Kleene (*): zero ou mais ocorrências.');
-      if (pattern.includes('|')) explanation.push('Contém união/alternância (|): escolha entre padrões.');
-      if (pattern.includes('+')) explanation.push('Contém +: no JavaScript significa uma ou mais ocorrências; no PDF também pode aparecer como união em x+y.');
-      if (/[A-Za-z0-9)][A-Za-z0-9(]/.test(pattern)) explanation.push('Contém concatenação implícita: símbolos próximos devem aparecer em sequência.');
-      if (pattern.includes('(') || pattern.includes(')')) explanation.push('Contém parênteses: usados para agrupar e alterar a precedência.');
+    <!-- Result -->
+    <div class="glass inv-result-area">
+      <p class="section-eyebrow mb-2">Resultado da Inversão</p>
 
-      showResult('Explicação da expressão', explanation.length ? explanation.join(' ') : 'Não encontrei operadores principais na expressão atual.', 'neutral');
-      renderNotes(notes);
-    }
+      <div style="margin-bottom:1.2rem;">
+        <label class="sim-label">Cadeia original (w)</label>
+        <div id="invOrig" class="mono" style="font-size:1.4rem; font-weight:700; color:var(--text); min-height:2rem; word-break:break-all;">—</div>
+      </div>
 
-    $$('.tab-btn').forEach(btn => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
-    $('#runBtn').addEventListener('click', runTest);
-    $('#clearBtn').addEventListener('click', () => {
-      regexInput.value = '';
-      testInput.value = '';
-      showResult('Aguardando teste...', 'Use os exemplos ou digite sua própria expressão regular.', 'neutral');
-      renderNotes([]);
+      <div style="margin-bottom:1.2rem;">
+        <label class="sim-label">Cadeia invertida (wᴿ)</label>
+        <div id="invRev" class="rev-display">—</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="invStats" class="inv-stat-row">
+        <span>Comprimento: <strong id="invLen">—</strong></span>
+        <span>Palíndromo: <strong id="invPalin">—</strong></span>
+      </div>
+
+      <div id="invExplain" class="explainer mt-2">
+        Digite uma cadeia e clique em <strong>Inverter</strong> para ver a análise completa.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SEÇÃO 7 — SIMULADOR DE EXPRESSÕES REGULARES
+     Ref. Jackson: slides 7,8,12,13,14,15
+════════════════════════════════════════════ -->
+<section id="simulador">
+  <p class="section-eyebrow fade-in">Seção 07</p>
+  <h2 class="section-title fade-in">Simulador de Expressões Regulares</h2>
+  <p class="section-desc fade-in">
+    Escolha um exemplo pré-definido ou escreva sua própria ER. O compilador inteligente traduz automaticamente
+    a notação do Prof. Jackson (<code class="mono">+</code> = união, <code class="mono">D</code> = dígito).
+  </p>
+
+  <div class="sim-layout fade-in">
+    <!-- Left: presets list -->
+    <div>
+      <p class="sim-label" style="margin-bottom:.8rem;">Exemplos pré-definidos</p>
+      <div class="preset-list" id="presetList"></div>
+    </div>
+
+    <!-- Right: simulator panel -->
+    <div class="glass sim-panel">
+      <span class="sim-label">Expressão Regular (notação Jackson: use + para |, D para dígito)</span>
+      <input id="simRegex" class="sim-input" type="text" placeholder="Ex.: (c+d)*(cc)(c+d)*" />
+
+      <span class="sim-label">Cadeia de teste</span>
+      <input id="simString" class="sim-input" type="text" placeholder="Ex.: cdccdd" />
+
+      <button class="sim-run-btn" id="simRun">▶ Testar Cadeia</button>
+
+      <div id="simBadge" class="result-badge neutral">
+        <span class="badge-dot neutral"></span>
+        Aguardando teste…
+      </div>
+
+      <div id="simExplainer" class="explainer">
+        Selecione uma expressão e uma cadeia para iniciar o teste.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SEÇÃO 8 — EXEMPLOS PRONTOS (CARDS)
+     Ref. Jackson: slides 12,13,14,15
+════════════════════════════════════════════ -->
+<section id="exemplos">
+  <p class="section-eyebrow fade-in">Seção 08</p>
+  <h2 class="section-title fade-in">Exemplos Prontos</h2>
+  <p class="section-desc fade-in">Cada card mostra a ER, o conjunto regular correspondente, a linguagem descrita e exemplos aceitos/rejeitados.</p>
+
+  <div class="example-cards" id="exampleCards"></div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SEÇÃO 9 — 14 IDENTIDADES DE KLEENE
+     Ref. Jackson: slide 19
+════════════════════════════════════════════ -->
+<section id="identidades">
+  <p class="section-eyebrow fade-in">Seção 09</p>
+  <h2 class="section-title fade-in">Identidades de Kleene</h2>
+  <p class="section-desc fade-in">
+    Sejam x, y e z três expressões regulares quaisquer. As identidades abaixo sempre valem.
+    Clique em cada card para expandir a explicação.
+  </p>
+  <div class="kleene-grid fade-in" id="kleeneGrid"></div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SEÇÃO 10 — COMPARAÇÃO ER / CR / LR
+════════════════════════════════════════════ -->
+<section id="comparacao">
+  <p class="section-eyebrow fade-in">Seção 10</p>
+  <h2 class="section-title fade-in">Comparação: ER × CR × LR</h2>
+  <p class="section-desc fade-in">Entenda as diferenças e semelhanças entre Expressão Regular, Conjunto Regular e Linguagem Regular.</p>
+
+  <div class="compare-table-wrap fade-in">
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Aspecto</th>
+          <th>Expressão Regular (ER)</th>
+          <th>Conjunto Regular (CR)</th>
+          <th>Linguagem Regular (LR)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="bold">O que é?</td>
+          <td>Notação textual — uma <em>fórmula</em></td>
+          <td>Um conjunto de cadeias definido recursivamente</td>
+          <td>A linguagem reconhecida por um autômato finito</td>
+        </tr>
+        <tr>
+          <td class="bold">Criado por</td>
+          <td>Stephen Kleene (1950s)</td>
+          <td>Teoria dos conjuntos + recursão</td>
+          <td>Chomsky — Hierarquia Tipo 3</td>
+        </tr>
+        <tr>
+          <td class="bold">Exemplo</td>
+          <td class="code">DD*</td>
+          <td class="code">{0..9}{0..9}*</td>
+          <td>L = {1, 2, 42, 100, ...} — números naturais</td>
+        </tr>
+        <tr>
+          <td class="bold">Operações</td>
+          <td class="code">* | + xy (x)</td>
+          <td class="code">X* X∪Y X·Y (X)</td>
+          <td>União, interseção, complemento, concatenação</td>
+        </tr>
+        <tr>
+          <td class="bold">Relação</td>
+          <td colspan="3" style="color:var(--cyan); font-family:var(--mono); text-align:center; font-size:0.85rem;">ER ↔ CR ↔ LR &nbsp;(representações equivalentes da mesma classe)</td>
+        </tr>
+        <tr>
+          <td class="bold">Função</td>
+          <td><em>Gera</em> cadeias (gerador)</td>
+          <td><em>Descreve</em> o conjunto (definição)</td>
+          <td><em>Reconhece</em> cadeias (via AFD/AFND)</td>
+        </tr>
+        <tr>
+          <td class="bold">Inclui ε?</td>
+          <td>x* inclui ε; x⁺ não inclui</td>
+          <td>{ε} é caso base</td>
+          <td>Depende da linguagem definida</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<!-- ════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════ -->
+<footer>
+  <div style="max-width:900px; margin:0 auto;">
+    <span>RegEx Elite 2026</span> — CEULP/ULBRA · Linguagens Formais<br>
+    Baseado no material do <span>Prof. Jackson Gomes de Souza</span><br>
+    <span>Igor Gabriel Silva</span> · <span>Jonas Gabriel Amorim</span> · <span>Lucas Leal</span> · <span>Samuel Matsukami</span>
+  </div>
+</footer>
+
+</div><!-- /app -->
+
+<!-- ════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════ -->
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DATA — Presets de Expressões Regulares
+   Baseados diretamente no material do Prof. Jackson (slides 7–15)
+═══════════════════════════════════════════════════════════ */
+const PRESETS = [
+  {
+    id: "naturais",
+    title: "Números Naturais",
+    // Jackson slide 7: N = DD*
+    regex: "DD*",
+    alpha: "D = {0,1,2,3,4,5,6,7,8,9}",
+    demo: "42",
+    desc: "A linguagem N dos números naturais decimais. Equivale a D⁺.",
+    accepts: ["1","42","007","999"],
+    rejects: ["", " ", "abc", "1.2"]
+  },
+  {
+    id: "reais",
+    title: "Números Reais",
+    // Jackson slide 8: R = DD*.D* ∪ D*.DD*
+    regex: "DD*.D* + D*.DD*",
+    alpha: "D ∪ {.}",
+    demo: "3.14",
+    desc: "Números reais decimais sem sinal. Note N ⊂ R.",
+    accepts: ["27","3.14",".315","47."],
+    rejects: ["abc","","..","1.2.3"]
+  },
+  {
+    id: "abc-plus",
+    title: "(a|b|c)⁺",
+    // Jackson slide 13: (A ∪ B)+ = (a|b|c)+
+    regex: "(a+b+c)+",
+    alpha: "{a, b, c}",
+    demo: "abc",
+    desc: "Cadeias sobre {a,b,c} com no mínimo um símbolo. Não aceita ε nem outros símbolos.",
+    accepts: ["a","b","c","abc","bca","aaa"],
+    rejects: ["","d","abcd","1"]
+  },
+  {
+    id: "astar",
+    title: "a(b|c)*",
+    // Jackson slide 12: a(b|c)*
+    regex: "a(b+c)*",
+    alpha: "{a, b, c}",
+    demo: "abbc",
+    desc: "Cadeias que começam com 'a', seguidas de zero ou mais b's e c's.",
+    accepts: ["a","ab","ac","abbc","accb"],
+    rejects: ["","b","c","ba","ca"]
+  },
+  {
+    id: "abcorig",
+    title: "(ab|c)*",
+    // Jackson slide 12: (ab|c)*
+    regex: "(ab+c)*",
+    alpha: "{a, b, c}",
+    demo: "cabc",
+    desc: "Zero ou mais repetições de 'ab' ou 'c'. Aceita ε.",
+    accepts: ["","ab","c","cabc","abab","cc"],
+    rejects: ["a","b","ba","d"]
+  },
+  {
+    id: "bin101",
+    title: "1*01*",
+    // Jackson slide 14: 1*01*
+    regex: "1*01*",
+    alpha: "{0, 1}",
+    demo: "110",
+    desc: "Cadeias binárias com exatamente um 0, precedido e sucedido por qualquer quantidade de 1s.",
+    accepts: ["0","10","01","110","011","1101"],
+    rejects: ["","1","11","100","001"]
+  },
+  {
+    id: "subcc",
+    title: "(c+d)*(cc)(c+d)*",
+    // Jackson slide 15: cadeias em {c,d} com 'cc' como subpalavra
+    regex: "(c+d)*(cc)(c+d)*",
+    alpha: "{c, d}",
+    demo: "cdccdd",
+    desc: "Cadeias sobre {c,d} que contêm 'cc' como subpalavra.",
+    accepts: ["cc","dcc","ccd","cdccdd","cccc"],
+    rejects: ["","c","d","cd","dc","cdc"]
+  },
+  {
+    id: "http",
+    title: "Códigos HTTP (4xx|5xx)",
+    // Exemplo extra: (4|5)DD
+    regex: "(4+5)DD",
+    alpha: "D = {0..9}",
+    demo: "404",
+    desc: "Códigos HTTP de erro: 4xx ou 5xx. Onde D é qualquer dígito.",
+    accepts: ["400","404","500","503","418","502"],
+    rejects: ["200","301","600","99","40"]
+  }
+];
+
+/* ═══════════════════════════════════════════════════════════
+   DATA — Exemplos prontos para os cards da Seção 8
+   Baseados nos slides 12, 13, 14, 15 do Jackson
+═══════════════════════════════════════════════════════════ */
+const EXAMPLE_CARDS = [
+  {
+    tag: "Slide 7", regex: "DD*", set: "{D}{D}*",
+    lang: "Números naturais decimais — todo número com ao menos 1 dígito",
+    accepts: ["1","42","007","9999"], rejects: ["ε","abc","1.2","-5"]
+  },
+  {
+    tag: "Slide 8", regex: "DD*.D* + D*.DD*", set: "{D}{D}*.{D}* ∪ {D}*.{D}{D}*",
+    lang: "Números reais decimais sem sinal (inclui formas como .315 e 47.)",
+    accepts: ["27","3.14",".315","47."], rejects: ["ε","abc","..","1.2.3"]
+  },
+  {
+    tag: "Slide 12", regex: "a(b|c)*", set: "{a}{b,c}*",
+    lang: "Cadeias sobre {a,b,c} que começam com 'a'",
+    accepts: ["a","ab","abc","abba","aaa"], rejects: ["ε","b","ba","c","ca"]
+  },
+  {
+    tag: "Slide 12", regex: "(ab|c)*", set: "({a}{b} ∪ {c})*",
+    lang: "Zero ou mais blocos 'ab' ou 'c' — inclui a cadeia vazia",
+    accepts: ["ε","ab","c","abab","cabc","cc"], rejects: ["a","b","ba","d"]
+  },
+  {
+    tag: "Slide 13", regex: "(a|b|c)+", set: "({a} ∪ {b} ∪ {c})⁺",
+    lang: "Cadeias sobre {a,b,c} com pelo menos um símbolo",
+    accepts: ["a","b","abc","bca"], rejects: ["ε","d","abcd","1"]
+  },
+  {
+    tag: "Slide 14", regex: "1*01*", set: "{1}*{0}{1}*",
+    lang: "Binárias com exatamente um 0, qualquer número de 1s ao redor",
+    accepts: ["0","10","01","110","1101"], rejects: ["ε","1","11","100"]
+  },
+  {
+    tag: "Slide 15", regex: "(c+d)*(cc)(c+d)*", set: "{c,d}*{cc}{c,d}*",
+    lang: "Cadeias em {c,d} que contêm 'cc' como subpalavra",
+    accepts: ["cc","dcc","cdccdd","cccc"], rejects: ["ε","c","d","cdc","cd"]
+  },
+  {
+    tag: "Extra", regex: "(4+5)DD", set: "({4}∪{5}){D}{D}",
+    lang: "Códigos HTTP de erro (4xx ou 5xx)",
+    accepts: ["404","500","503","418"], rejects: ["200","301","99","40","6xx"]
+  }
+];
+
+/* ═══════════════════════════════════════════════════════════
+   DATA — Identidades de Kleene
+   Ref. Jackson: slide 19 — 14 relações de identidade
+═══════════════════════════════════════════════════════════ */
+const KLEENE_IDS = [
+  { formula:"x | y = y | x",      name:"Comutatividade da União",    desc:"A ordem dos operandos na união não importa." },
+  { formula:"(x|y)|z = x|(y|z)",  name:"Associatividade da União",   desc:"O agrupamento na união pode ser reorganizado livremente." },
+  { formula:"x(yz) = (xy)z",      name:"Associatividade da Concat.", desc:"O agrupamento na concatenação pode ser reorganizado." },
+  { formula:"x(y|z) = xy|xz",     name:"Distributividade (esq)",     desc:"Concatenação distribui sobre a união pela esquerda." },
+  { formula:"(x|y)z = xz|yz",     name:"Distributividade (dir)",     desc:"Concatenação distribui sobre a união pela direita." },
+  { formula:"x | x = x",          name:"Idempotência da União",      desc:"A união de x consigo mesmo é o próprio x." },
+  { formula:"xε = εx = x",        name:"Identidade da Concat.",      desc:"Concatenar com ε não altera a expressão." },
+  { formula:"x∅ = ∅x = ∅",        name:"Aniquilação por ∅",          desc:"Concatenar com ∅ sempre resulta em ∅." },
+  { formula:"x | ∅ = x",          name:"Identidade da União",        desc:"A união com ∅ não acrescenta nada." },
+  { formula:"x* = ε | xx*",       name:"Expansão do Kleene",         desc:"x* pode ser expandido para ε ou um x seguido de x*." },
+  { formula:"x* = ε | x*x",       name:"Expansão alternativa",       desc:"Variação: x* = ε ou x* concatenado com x." },
+  { formula:"(x*)* = x*",         name:"Idempotência do Kleene",     desc:"Aplicar Kleene duas vezes é igual a aplicar uma vez." },
+  { formula:"∅* = ε",             name:"Kleene do vazio",            desc:"O fechamento de Kleene do conjunto vazio é {ε}." },
+  { formula:"(xy)*x = x(yx)*",    name:"Comutação com fechamento",   desc:"Relação útil para simplificar expressões com Kleene." }
+];
+
+/* ═══════════════════════════════════════════════════════════
+   COMPILADOR INTELIGENTE de ER — Notação Jackson → JavaScript RegExp
+   Traduz: + → | (união), D → [0-9], . literal → \. , ⁺ → +
+═══════════════════════════════════════════════════════════ */
+function compileRegex(expr) {
+  // Passo 1: Normaliza o símbolo D do Jackson para classe de dígitos JS
+  let r = expr.replace(/\bD\b/g, '[0-9]');
+
+  // Passo 2: Protege pontos que estejam FORA de [] (literais no Jackson)
+  // Encontra '.' que não está dentro de uma classe de caracteres e escapa
+  r = r.replace(/\.(?![^\[]*\])/g, '\\.');
+
+  // Passo 3: Troca '+' de UNIÃO (Jackson) por '|' (JS)
+  // Mas só onde + NÃO é precedido por um caractere que fecha uma expressão (* ) ou ]
+  // Heurística: se '+' está entre operandos, é união; se está após * ou ] → fecho transitivo
+  // Para simplificar: substituição com tokenização
+  r = r.replace(/(?<![*)\]a-zA-Z0-9])\+/g, '|')  // + no início ou após operador → união
+       .replace(/\+(?=[^*])/g, (m, offset, str) => {
+         const prev = str[offset - 1];
+         // Se precedido por letra/número/parêntese-fechado → pode ser fecho (x+) ou união
+         // Usamos contexto: se seguido por letra/( → união; se fim ou * → fecho transitivo
+         return m; // mantemos por ora e resolvemos abaixo
+       });
+  // Abordagem direta: + entre dois "termos" é |; + após um termo sem seguido (fim) é fecho
+  // Para o material do Jackson, a convenção é + = união dentro de parênteses geralmente
+  // Implementamos uma substituição contextual:
+  r = expr
+    .replace(/\bD\b/g, '[0-9]')
+    .replace(/\.(?![^\[]*\])/g, '\\.')
+    .replace(/\+/g, (m, offset, str) => {
+      // Analisa o caractere seguinte
+      const next = str[offset + 1];
+      // Se + vem após ) * letra/dígito e o próximo é letra/dígito/( → união
+      if (next && /[a-zA-Z0-9(]/.test(next)) return '|';
+      // Caso contrário (fim de expressão, ou após [ ]) → pode ser fecho transitivo (+)
+      return '+';
     });
-    $('#explainBtn').addEventListener('click', explainCurrentRegex);
-    regexInput.addEventListener('input', () => renderNotes(detectAcademicNotation(regexInput.value)));
-    testInput.addEventListener('keydown', event => {
-      if (event.key === 'Enter') runTest();
-    });
 
-    renderGlossary();
-    renderExamples();
-    renderIdentities();
-    runTest();
+  return r;
+}
 
-    document.addEventListener('click', event => {
-      const button = event.target.closest('.example-btn');
-      if (!button) return;
-      const ex = examples[Number(button.dataset.index)];
-      regexInput.value = ex.jsRegex;
-      testInput.value = ex.test;
-      setTab('simulador');
-      showResult(`Exemplo carregado: ${ex.title}`, `${ex.formal} → sintaxe JS: /${ex.jsRegex}/`, 'neutral');
-      renderNotes(detectAcademicNotation(ex.formal));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+/* ═══════════════════════════════════════════════════════════
+   Função principal de matching
+   Retorna objeto { match: bool, regexStr: string, error: string|null }
+═══════════════════════════════════════════════════════════ */
+function testRegex(rawExpr, testStr) {
+  // Trata cadeia vazia digitada como epsilon
+  const str = testStr === 'ε' ? '' : testStr;
+  try {
+    const compiled = compileRegex(rawExpr);
+    const re = new RegExp('^(?:' + compiled + ')$');
+    return { match: re.test(str), regexStr: compiled, error: null };
+  } catch(e) {
+    return { match: false, regexStr: '', error: 'Expressão inválida: ' + e.message };
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Gera texto explicativo para o resultado do simulador
+═══════════════════════════════════════════════════════════ */
+function buildExplainer(preset, testStr, matched) {
+  const rev = reverseStr(testStr);
+  const w = testStr === '' ? 'ε (cadeia vazia)' : `"${testStr}"`;
+  const wR = rev === '' ? 'ε' : `"${rev}"`;
+
+  const prec = `<strong>Precedência aplicada:</strong> 1° Fechamento (*), 2° Concatenação, 3° União (|).`;
+  const result = matched
+    ? `✅ <strong>Aceita!</strong> A cadeia ${w} <strong>pertence</strong> à linguagem ${preset?.title || ''}.`
+    : `❌ <strong>Rejeitada.</strong> A cadeia ${w} <strong>não pertence</strong> à linguagem ${preset?.title || ''}.`;
+
+  const why = matched
+    ? `A cadeia satisfaz o padrão <strong class="mono">${preset?.regex || ''}</strong>.`
+    : `A cadeia não satisfaz o padrão ou contém símbolos fora do alfabeto.`;
+
+  return `${result}<br>${why}<br>${prec}<span class="rev-line">↩ wᴿ = ${wR}</span>`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INVERSÃO DE CADEIA
+═══════════════════════════════════════════════════════════ */
+function reverseStr(s) {
+  return s.split('').reverse().join('');
+}
+
+function isPalindrome(s) {
+  return s.length > 0 && s === reverseStr(s);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER — Presets no Simulador (lista lateral)
+═══════════════════════════════════════════════════════════ */
+function renderPresets() {
+  const list = document.getElementById('presetList');
+  list.innerHTML = PRESETS.map((p, i) => `
+    <div class="preset-card ${i === 0 ? 'active' : ''}" data-idx="${i}">
+      <div class="pc-title">${p.title}</div>
+      <div class="pc-regex">${p.regex}</div>
+      <div class="pc-alpha">${p.alpha}</div>
+    </div>
+  `).join('');
+
+  // Carrega o primeiro preset
+  loadPreset(0);
+}
+
+let activePresetIdx = 0;
+
+function loadPreset(idx) {
+  activePresetIdx = idx;
+  const p = PRESETS[idx];
+  document.getElementById('simRegex').value  = p.regex;
+  document.getElementById('simString').value = p.demo;
+  document.querySelectorAll('.preset-card').forEach((c, i) => {
+    c.classList.toggle('active', i === idx);
+  });
+  // Auto-run
+  runSimulator();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER — Example Cards (Seção 8)
+   Ref. Jackson: slides 12-15
+═══════════════════════════════════════════════════════════ */
+function renderExampleCards() {
+  const grid = document.getElementById('exampleCards');
+  grid.innerHTML = EXAMPLE_CARDS.map(c => `
+    <div class="glass ex-card fade-in">
+      <div class="ex-top">
+        <div class="ex-regex">${c.regex}</div>
+        <span class="ex-tag">${c.tag}</span>
+      </div>
+      <div class="ex-set">${c.set}</div>
+      <div class="ex-lang">${c.lang}</div>
+      <span class="ex-label">✅ Aceita</span>
+      <div class="ex-chips">
+        ${c.accepts.map(s => `<span class="ex-chip ok">${s === '' ? 'ε' : s}</span>`).join('')}
+      </div>
+      <span class="ex-label">❌ Rejeita</span>
+      <div class="ex-chips">
+        ${c.rejects.map(s => `<span class="ex-chip bad">${s === '' ? 'ε' : s}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER — Kleene Identities Grid (Seção 9)
+   Ref. Jackson: slide 19 — 14 identidades
+═══════════════════════════════════════════════════════════ */
+function renderKleeneGrid() {
+  const grid = document.getElementById('kleeneGrid');
+  grid.innerHTML = KLEENE_IDS.map((k, i) => `
+    <div class="glass kleene-card fade-in" data-ki="${i}">
+      <div class="kc-num">ID ${String(i+1).padStart(2,'0')}</div>
+      <div class="kc-formula">${k.formula}</div>
+      <div class="kc-name">${k.name}</div>
+      <div class="kc-desc">${k.desc}</div>
+    </div>
+  `).join('');
+
+  // Toggle expand ao clicar
+  grid.addEventListener('click', e => {
+    const card = e.target.closest('.kleene-card');
+    if (card) card.classList.toggle('expanded');
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIMULADOR — Execução e atualização do resultado
+═══════════════════════════════════════════════════════════ */
+function runSimulator() {
+  const rawRegex  = document.getElementById('simRegex').value.trim();
+  const testStr   = document.getElementById('simString').value;
+  const badge     = document.getElementById('simBadge');
+  const explainer = document.getElementById('simExplainer');
+  const input     = document.getElementById('simString');
+
+  if (!rawRegex) {
+    badge.className = 'result-badge neutral';
+    badge.innerHTML = '<span class="badge-dot neutral"></span>Insira uma expressão regular';
+    return;
+  }
+
+  const { match, error } = testRegex(rawRegex, testStr);
+  const preset = PRESETS[activePresetIdx] || { title: 'ER', regex: rawRegex };
+
+  if (error) {
+    badge.className = 'result-badge reject';
+    badge.innerHTML = `<span class="badge-dot reject"></span>${error}`;
+    input.classList.remove('match','reject');
+    return;
+  }
+
+  if (match) {
+    badge.className = 'result-badge accept';
+    badge.innerHTML = '<span class="badge-dot accept"></span>✅ ACEITA — pertence à linguagem';
+    input.classList.add('match');
+    input.classList.remove('reject');
+  } else {
+    badge.className = 'result-badge reject';
+    badge.innerHTML = '<span class="badge-dot reject"></span>❌ REJEITADA — não pertence';
+    input.classList.add('reject');
+    input.classList.remove('match');
+  }
+
+  explainer.innerHTML = buildExplainer(preset, testStr, match);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INVERSÃO — Lógica interativa com animação
+═══════════════════════════════════════════════════════════ */
+function runInversion() {
+  const raw = document.getElementById('invInput').value;
+
+  // Atualiza original
+  document.getElementById('invOrig').textContent = raw === '' ? 'ε (cadeia vazia)' : raw;
+
+  // Símbolos separados — strip visual
+  const strip = document.getElementById('symStrip');
+  strip.innerHTML = raw.split('').map((ch, i) =>
+    `<span class="sym-chip" style="animation-delay:${i * 0.04}s">${ch}</span>`
+  ).join('') || '<span style="color:var(--text-mute); font-size:0.82rem; font-family:var(--mono);">cadeia vazia (ε)</span>';
+
+  // Reversed com animação flip
+  const rev = reverseStr(raw);
+  const revEl = document.getElementById('invRev');
+  revEl.classList.remove('animating');
+  void revEl.offsetWidth; // reflow para reiniciar animação
+  revEl.classList.add('animating');
+  revEl.textContent = rev === '' ? 'ε (cadeia vazia)' : rev;
+
+  // Stats
+  document.getElementById('invLen').textContent = raw.length;
+  document.getElementById('invPalin').textContent = raw.length === 0 ? '—' : (isPalindrome(raw) ? '✅ Sim!' : '❌ Não');
+
+  // Explicação textual
+  const w  = raw === '' ? 'ε' : `"${raw}"`;
+  const wR = rev === '' ? 'ε' : `"${rev}"`;
+  let sym = '';
+  if (raw.length > 0) {
+    sym = raw.split('').map((c,i) => `w[${i+1}] = <strong>${c}</strong>`).join(', ');
+  }
+
+  document.getElementById('invExplain').innerHTML =
+    `<strong>w = ${w}</strong> tem ${raw.length} símbolo(s).<br>` +
+    (sym ? `Símbolos: ${sym}.<br>` : '') +
+    `Invertendo a ordem: <span style="color:var(--cyan); font-family:var(--mono)">wᴿ = ${wR}</span><br>` +
+    (isPalindrome(raw) && raw.length > 0
+      ? `<span style="color:var(--amber)">✨ Palíndromo! w = wᴿ</span>`
+      : '');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLL-BASED STAGGER ANIMATION — IntersectionObserver
+═══════════════════════════════════════════════════════════ */
+function initAnimations() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
     });
-  </script>
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-in').forEach((el, i) => {
+    el.style.transitionDelay = `${(i % 8) * 0.07}s`;
+    observer.observe(el);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAV ACTIVE STATE — atualiza link ativo ao scroll
+═══════════════════════════════════════════════════════════ */
+function initNavHighlight() {
+  const sections = document.querySelectorAll('section[id]');
+  const links    = document.querySelectorAll('.nav-link');
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = e.target.getAttribute('id');
+        links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === `#${id}`));
+      }
+    });
+  }, { threshold: 0.35 });
+
+  sections.forEach(s => obs.observe(s));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EVENT BINDING
+═══════════════════════════════════════════════════════════ */
+function bindEvents() {
+  // Simulador
+  document.getElementById('simRun').addEventListener('click', runSimulator);
+  document.getElementById('simString').addEventListener('input', runSimulator);
+  document.getElementById('simRegex').addEventListener('input', () => {
+    document.getElementById('simString').classList.remove('match', 'reject');
+    runSimulator();
+  });
+
+  // Presets
+  document.getElementById('presetList').addEventListener('click', e => {
+    const card = e.target.closest('.preset-card');
+    if (card) loadPreset(Number(card.dataset.idx));
+  });
+
+  // Inversão
+  document.getElementById('invBtn').addEventListener('click', runInversion);
+  document.getElementById('invInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runInversion();
+  });
+  // Inversão em tempo real
+  document.getElementById('invInput').addEventListener('input', () => {
+    const raw = document.getElementById('invInput').value;
+    const strip = document.getElementById('symStrip');
+    strip.innerHTML = raw.split('').map((ch, i) =>
+      `<span class="sym-chip" style="animation-delay:${i * 0.04}s">${ch}</span>`
+    ).join('') || '';
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT — Ponto de entrada principal
+═══════════════════════════════════════════════════════════ */
+function init() {
+  renderPresets();       // Sidebar do simulador
+  renderExampleCards();  // Cards de exemplos prontos (Seção 8)
+  renderKleeneGrid();    // Grid de identidades de Kleene (Seção 9)
+  bindEvents();          // Event listeners
+  initAnimations();      // IntersectionObserver para fade-in stagger
+  initNavHighlight();    // Nav link ativo no scroll
+
+  // Re-observe após render dinâmico
+  setTimeout(() => {
+    document.querySelectorAll('.fade-in:not(.visible)').forEach((el, i) => {
+      el.style.transitionDelay = `${(i % 6) * 0.08}s`;
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }});
+      }, { threshold: 0.05, rootMargin: '0px 0px -30px 0px' });
+      obs.observe(el);
+    });
+  }, 300);
+}
+
+// Executa após o DOM estar pronto
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
 </body>
 </html>

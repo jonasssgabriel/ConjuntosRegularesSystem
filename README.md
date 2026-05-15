@@ -11,7 +11,7 @@
 |---|------|
 | 1 | Igor Gabriel Silva |
 | 2 | Jonas Gabriel Amorim |
-| 3 | Lucas Leal |
+| 3 | Lucas Leal Ferreira|
 | 4 | Samuel Matsukami |
 
 ---
